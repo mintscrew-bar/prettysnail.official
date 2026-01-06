@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import React, { useEffect, useState, useRef } from 'react';
 import styles from './Header.module.scss';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,68 +17,70 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 모바일 메뉴 열림/닫힘 시 body 스크롤 제어
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isMobileMenuOpen]);
-
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
   return (
     <>
-      <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
-        <Link href="/" className={styles.logo}>
+      <header
+        ref={headerRef}
+        className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}
+      >
+        <a href="/" className={styles.logo}>
           <img src="/logo/Asset 2.png" alt="" className={styles.logoImage} />
           <span className={styles.logoText}>이쁜우렁이</span>
-        </Link>
+        </a>
         <nav className={styles.nav}>
-          <Link href="/products" className={styles.navLink}>
+          <a href="/products" className={styles.navLink}>
             제품
-          </Link>
-          <Link href="/#story" className={styles.navLink}>
+          </a>
+          <a href="/story" className={styles.navLink}>
             스토리
-          </Link>
-          <Link href="/#contact" className={styles.navLink}>
-            문의
-          </Link>
+          </a>
+          <a href="/notice" className={styles.navLink}>
+            공지사항
+          </a>
+          <a href="/support" className={styles.navLink}>
+            고객지원
+          </a>
         </nav>
         <button
-          className={styles.menuBtn}
+          className={`${styles.mobileMenuBtn} ${isMobileMenuOpen ? styles.open : ''}`}
           onClick={toggleMobileMenu}
-          aria-label="메뉴"
+          aria-label={isMobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
         >
-          {isMobileMenuOpen ? '✕' : '☰'}
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
       </header>
 
       {/* 모바일 메뉴 */}
       <div className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.open : ''}`}>
-        <div className={styles.mobileMenuOverlay} onClick={closeMobileMenu}></div>
         <nav className={styles.mobileNav}>
-          <Link href="/products" className={styles.mobileNavLink} onClick={closeMobileMenu}>
+          <a href="/products" className={styles.mobileNavLink} onClick={toggleMobileMenu}>
             제품
-          </Link>
-          <Link href="/#story" className={styles.mobileNavLink} onClick={closeMobileMenu}>
+          </a>
+          <a href="/story" className={styles.mobileNavLink} onClick={toggleMobileMenu}>
             스토리
-          </Link>
-          <Link href="/#contact" className={styles.mobileNavLink} onClick={closeMobileMenu}>
-            문의
-          </Link>
+          </a>
+          <a href="/notice" className={styles.mobileNavLink} onClick={toggleMobileMenu}>
+            공지사항
+          </a>
+          <a href="/support" className={styles.mobileNavLink} onClick={toggleMobileMenu}>
+            고객지원
+          </a>
         </nav>
       </div>
+
+      {/* 오버레이 */}
+      {isMobileMenuOpen && (
+        <div
+          className={styles.mobileMenuOverlay}
+          onClick={toggleMobileMenu}
+        />
+      )}
     </>
   );
 }

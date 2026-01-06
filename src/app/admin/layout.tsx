@@ -55,6 +55,7 @@ export default function AdminLayout({
     { href: '/admin', label: '대시보드', icon: '📊' },
     { href: '/admin/products', label: '제품 관리', icon: '📦' },
     { href: '/admin/promotions', label: '프로모션 관리', icon: '🎉' },
+    { href: '/admin/notices', label: '공지사항 관리', icon: '📢' },
     { href: '/admin/categories', label: '카테고리 관리', icon: '📁' },
     { href: '/admin/settings', label: '설정', icon: '⚙️' },
   ];

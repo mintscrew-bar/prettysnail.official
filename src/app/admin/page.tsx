@@ -8,6 +8,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState([
     { label: '전체 제품', value: '0', icon: '📦', href: '/admin/products' },
     { label: '활성 프로모션', value: '0', icon: '🎉', href: '/admin/promotions' },
+    { label: '공지사항', value: '0', icon: '📢', href: '/admin/notices' },
     { label: '카테고리', value: '0', icon: '📁', href: '/admin/categories' },
   ]);
 
@@ -23,6 +24,10 @@ export default function AdminDashboard() {
         const savedPromotions = localStorage.getItem('admin-promotions');
         const promotionsCount = savedPromotions ? JSON.parse(savedPromotions).length : 0;
 
+        // 공지사항 개수
+        const savedNotices = localStorage.getItem('admin-notices');
+        const noticesCount = savedNotices ? JSON.parse(savedNotices).length : 0;
+
         // 카테고리 개수 ('all' 제외)
         const savedCategories = localStorage.getItem('admin-categories');
         const categoriesCount = savedCategories
@@ -32,6 +37,7 @@ export default function AdminDashboard() {
         setStats([
           { label: '전체 제품', value: productsCount.toString(), icon: '📦', href: '/admin/products' },
           { label: '활성 프로모션', value: promotionsCount.toString(), icon: '🎉', href: '/admin/promotions' },
+          { label: '공지사항', value: noticesCount.toString(), icon: '📢', href: '/admin/notices' },
           { label: '카테고리', value: categoriesCount.toString(), icon: '📁', href: '/admin/categories' },
         ]);
       }
@@ -84,6 +90,12 @@ export default function AdminDashboard() {
             <div className={styles.actionIcon}>🎨</div>
             <div className={styles.actionTitle}>프로모션 만들기</div>
             <div className={styles.actionDesc}>이벤트나 할인을 추가하세요</div>
+          </Link>
+
+          <Link href="/admin/notices" className={styles.actionCard}>
+            <div className={styles.actionIcon}>📢</div>
+            <div className={styles.actionTitle}>공지사항 작성</div>
+            <div className={styles.actionDesc}>새로운 소식을 알려주세요</div>
           </Link>
 
           <Link href="/" className={styles.actionCard}>
