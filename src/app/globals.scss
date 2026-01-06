@@ -1,0 +1,175 @@
+// ==========================================
+// 이쁜우렁이 브랜드 글로벌 스타일
+// ==========================================
+
+// CSS 변수 정의
+:root {
+  // 브랜드 컬러 - 따뜻한 자연 톤
+  --color-primary: #5d7a4a;      // 부드러운 올리브 그린
+  --color-primary-light: #7a9966;
+  --color-primary-dark: #4a6339;
+  --color-secondary: #a67c52;    // 따뜻한 테라코타 브라운
+  --color-accent: #c9a66b;       // 따뜻한 골드/머스타드
+
+  // 배경색 - 따뜻한 크림 톤
+  --color-bg: #fdfbf7;           // 따뜻한 오프화이트
+  --color-bg-warm: #f7f3eb;      // 크림
+  --color-bg-cream: #f0e9dc;     // 진한 크림
+  --color-bg-dark: #3d3a35;      // 따뜻한 다크 (차콜 브라운)
+
+  // 텍스트 컬러
+  --color-text: #3d3a35;         // 따뜻한 차콜
+  --color-text-light: #6b6560;
+  --color-text-muted: #9a948c;
+  --color-text-inverse: #fdfbf7;
+
+  // 간격
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 2rem;
+  --spacing-lg: 4rem;
+  --spacing-xl: 6rem;
+  --spacing-2xl: 8rem;
+
+  // 폰트 사이즈
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-size-3xl: 3rem;
+  --font-size-4xl: 4rem;
+  --font-size-hero: clamp(2.5rem, 8vw, 6rem);
+
+  // 트랜지션
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  // 헤더 높이
+  --header-height: 80px;
+  --header-height-scrolled: 60px;
+}
+
+// 리셋 & 기본 스타일
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  overflow-x: hidden;
+  max-width: 100vw;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+}
+
+body {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo',
+    'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
+
+  // 모바일 터치 최적화
+  -webkit-tap-highlight-color: rgba(93, 122, 74, 0.1);
+  touch-action: manipulation;
+}
+
+// 스크롤바 스타일
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-secondary);
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--color-primary);
+  }
+}
+
+// 선택 영역 스타일
+::selection {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+// 링크 기본 스타일
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+
+  // 모바일 터치 영역 최소 크기 (44x44px)
+  @media (max-width: 768px) {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+// 버튼 기본 스타일
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+
+  // 모바일 터치 영역 최소 크기
+  @media (max-width: 768px) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  // 터치 피드백
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+// 이미지 기본 스타일
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// 유틸리티 클래스
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// 프리로더 표시 중 body 스크롤 방지
+body.loading {
+  overflow: hidden;
+}

@@ -1,0 +1,241 @@
+// ==========================================
+// 로그인 페이지 - 따뜻하고 미니멀한 디자인
+// ==========================================
+
+.loginPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-cream) 0%,
+    var(--color-bg-warm) 50%,
+    var(--color-bg) 100%
+  );
+  padding: var(--spacing-md);
+  position: relative;
+
+  // 배경 패턴
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(
+      circle at 20% 50%,
+      rgba(93, 122, 74, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(166, 124, 82, 0.05) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
+  }
+}
+
+.loginContainer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+// 로고
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-decoration: none;
+  margin-bottom: var(--spacing-sm);
+  transition: transform var(--transition-base);
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.logoIcon {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.logoText {
+  font-family: 'memomentKkukKkuk', sans-serif;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text);
+  font-weight: normal;
+  margin: 0;
+}
+
+// 로그인 카드
+.loginCard {
+  background: white;
+  border-radius: 20px;
+  padding: var(--spacing-xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-lg);
+    border-radius: 16px;
+  }
+}
+
+.cardHeader {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.title {
+  font-family: 'memomentKkukKkuk', sans-serif;
+  font-size: var(--font-size-xl);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-xs);
+  font-weight: normal;
+}
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+// 폼
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.input {
+  padding: 14px 16px;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-bg-warm);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  transition: all var(--transition-base);
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  &:hover {
+    background: var(--color-bg-cream);
+  }
+
+  &:focus {
+    outline: none;
+    background: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(93, 122, 74, 0.1);
+  }
+}
+
+// 에러 메시지
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 12px 16px;
+  background: rgba(255, 107, 107, 0.1);
+  color: #d63031;
+  border-radius: 10px;
+  font-size: var(--font-size-sm);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+}
+
+// 로그인 버튼
+.loginBtn {
+  padding: 16px;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: white;
+  background: var(--color-secondary);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 14px rgba(166, 124, 82, 0.25);
+  font-family: inherit;
+
+  &:hover:not(:disabled) {
+    background: #8f6a45;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(166, 124, 82, 0.35);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// 도움말
+.helpText {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-bg-cream);
+  text-align: center;
+
+  p {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+}
+
+// 돌아가기 링크
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 20px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  background: white;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}

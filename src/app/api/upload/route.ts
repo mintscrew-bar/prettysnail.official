@@ -1,0 +1,53 @@
+import { put } from '@vercel/blob';
+import { NextResponse } from 'next/server';
+
+export async function POST(request: Request) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return NextResponse.json({ error: '파일이 없습니다.' }, { status: 400 });
+    }
+
+    // 파일 크기 제한 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: '파일 크기는 10MB 이하여야 합니다.' }, { status: 400 });
+    }
+
+    // 이미지 파일만 허용
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: '이미지 파일만 업로드 가능합니다.' }, { status: 400 });
+    }
+
+    // Vercel Blob에 업로드
+    // 환경 변수가 설정되어 있지 않으면 로컬 개발 모드로 폴백
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(file.name, file, {
+        access: 'public',
+      });
+
+      return NextResponse.json({ url: blob.url });
+    } else {
+      // 로컬 개발 환경: base64 데이터 URL로 변환
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:${file.type};base64,${base64}`;
+
+      return NextResponse.json({
+        url: dataUrl,
+        warning: '개발 모드: 이미지가 base64로 저장됩니다. Vercel에 배포하면 Blob Storage를 사용합니다.'
+      });
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json({ error: '업로드 중 오류가 발생했습니다.' }, { status: 500 });
+  }
+}
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
