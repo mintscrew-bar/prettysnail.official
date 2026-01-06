@@ -46,10 +46,16 @@ src/
 │   │   ├── page.tsx            # Admin dashboard home
 │   │   ├── login/              # Admin login page
 │   │   ├── products/           # Product management
-│   │   └── promotions/         # Promotion management
+│   │   ├── promotions/         # Promotion management
+│   │   └── notices/            # Notice management
 │   ├── products/               # Public product pages
 │   │   ├── page.tsx            # Product listing
 │   │   └── [id]/page.tsx       # Product detail
+│   ├── notice/                 # Notice board
+│   │   ├── page.tsx            # Notice list
+│   │   └── [id]/page.tsx       # Notice detail
+│   ├── story/                  # Story page (placeholder)
+│   ├── support/                # Customer support page
 │   └── api/
 │       └── upload/route.ts     # Image upload API (Vercel Blob)
 ├── components/
@@ -61,7 +67,9 @@ src/
 │   └── useLocalStorage.ts      # localStorage hook with SSR safety
 └── data/
     ├── promotions.ts           # Promotion/event cards data
-    └── products.ts             # Product catalog data
+    ├── products.ts             # Product catalog data
+    ├── notices.ts              # Notice board data
+    └── qna.ts                  # FAQ data (QnA board removed)
 
 public/
 ├── images/
@@ -81,12 +89,17 @@ The app uses Next.js App Router with the following key routes:
 - `/` - Homepage with full marketing experience (GSAP animations, product showcase)
 - `/products` - Product listing page
 - `/products/[id]` - Individual product detail pages
+- `/notice` - Notice board list page with filtering and search
+- `/notice/[id]` - Notice detail page with view counter
+- `/story` - Story page (placeholder)
+- `/support` - Customer support page with contact info and FAQ
 
 **Admin Routes (client-side localStorage auth):**
 - `/admin/login` - Admin login (credentials: admin/admin1234)
 - `/admin` - Admin dashboard home
 - `/admin/products` - Product management (CRUD operations)
 - `/admin/promotions` - Promotion management (CRUD operations)
+- `/admin/notices` - Notice management (CRUD operations)
 
 **API Routes:**
 - `/api/upload` - POST endpoint for image uploads (uses Vercel Blob in production, base64 in development)
@@ -150,7 +163,9 @@ useEffect(() => {
 - Uses `useLocalStorage` hook for CRUD operations
 - Products: array with id, name, category, price, image, description
 - Promotions: array with id, title, description, image, discount, period, link
+- Notices: array with id, title, content, date, isPinned, isImportant, category, views
 - Changes persist to localStorage immediately
+- localStorage keys: `admin-products`, `admin-promotions`, `admin-notices`
 
 ### Animation System (GSAP)
 
@@ -329,3 +344,59 @@ See `DEPLOYMENT.md` for detailed instructions. Key steps:
 - Large base64 images in localStorage can slow down admin panel
 - No image optimization/compression before upload
 - GSAP animations can be heavy on low-end devices
+
+## Recent Development History
+
+### 2026-01-06: Support Page Redesign & Admin Unification
+
+**Pages Created:**
+- `/notice` - Notice board list page with filtering and search
+- `/notice/[id]` - Notice detail page with view counter
+- `/story` - Story page (placeholder)
+- `/support` - Customer support page with contact info and FAQ
+- `/admin/notices` - Admin notices management page
+
+**Support Page Features:**
+- **Contact Methods Section** (`src/app/support/page.tsx`):
+  - 4 contact cards: Phone, Email, KakaoTalk (link), Naver TalkTalk (link)
+  - Removed "24시간 접수 가능" text from email card per user request
+  - Cards have consistent height with `align-items: flex-start`
+  - KakaoTalk and Naver TalkTalk are clickable links (currently placeholder `#`)
+  - Icon background: `var(--color-primary-light)` with 60px fixed size
+
+- **FAQ Section** (`src/app/support/page.tsx`):
+  - Category filtering: 전체, 주문/배송, 제품, 반품/교환
+  - Accordion-style Q&A display
+  - Simplified design (no hover effects, no animations, no background on answers)
+  - Clean border-left accent on expanded answers removed per user request
+
+- **Design Decisions** (`src/app/support/support.module.scss`):
+  - Background unified with main page: `var(--color-bg-cream)` (#f0e9dc)
+  - contactSection: `var(--color-bg-warm)` (#f7f3eb)
+  - faqSection: gradient matching main page
+  - NO section padding (removed per user request to prevent card squishing)
+  - NO hover background color on FAQ questions
+  - NO shadow effects (user requested clean, minimal design)
+
+**Admin Notices Management:**
+- Unified styling with Product/Promotion management pages
+- Uses consistent class names: `managementPage`, `pageHeader`, `filterBar`, `tableWrapper`, `dataTable`
+- Added page description: "공지사항을 추가, 수정, 삭제할 수 있어요"
+- Table columns: ID, 제목, 카테고리, 날짜, 조회수, 고정, 중요, 작업
+- Supports pinned notices and important notices
+- Data stored in localStorage as `admin-notices`
+
+**Key Files Modified:**
+- `src/app/support/page.tsx` - Complete support page implementation
+- `src/app/support/support.module.scss` - Minimal design styles
+- `src/app/admin/notices/page.tsx` - Admin notices management
+- `src/app/admin/admin.module.scss` - Added `noticeTitle` style
+- `src/data/qna.ts` - FAQ and QnA interfaces (QnA board removed, only FAQ used)
+- `src/data/notices.ts` - Notice interface and sample data
+
+**Important User Preferences:**
+- User wants minimal design: no excessive shadows, hover effects, or animations
+- Sections should be distinguished by background color and spacing, not borders/shadows
+- Contact cards should have uniform height and clean layout
+- FAQ answers should be simple text without backgrounds or fancy styling
+- All pages should maintain color consistency with main page theme
