@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { products as initialProducts, Product, categories as initialCategories } from '@/data/products';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useImageUpload } from '@/hooks/useImageUpload';
+import Modal from '@/components/admin/Modal';
+import ImageUpload from '@/components/admin/ImageUpload';
 import styles from '../admin.module.scss';
 
 interface Category {
@@ -17,6 +20,7 @@ export default function ProductsManagement() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const { uploadImage } = useImageUpload();
 
   // 기본 카테고리 (첫 번째 카테고리, 'all' 제외)
   const getDefaultCategory = () => {
@@ -26,7 +30,7 @@ export default function ProductsManagement() {
 
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
-    category: getDefaultCategory(),
+    category: getDefaultCategory() as Product['category'],
     price: 0,
     description: '',
     tags: [],
@@ -37,10 +41,6 @@ export default function ProductsManagement() {
 
   // 상세 이미지 URL 배열
   const [detailImages, setDetailImages] = useState<string[]>([]);
-
-  // 업로드 상태
-  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
-  const [uploadingDetailImages, setUploadingDetailImages] = useState<{ [key: number]: boolean }>({});
 
   // 필터링된 제품 목록
   const filteredProducts = products.filter((product) => {
@@ -59,7 +59,7 @@ export default function ProductsManagement() {
       setEditingProduct(null);
       setFormData({
         name: '',
-        category: getDefaultCategory(),
+        category: getDefaultCategory() as Product['category'],
         price: 0,
         description: '',
         tags: [],
@@ -79,71 +79,13 @@ export default function ProductsManagement() {
     setDetailImages([]);
   };
 
-  // 이미지 업로드 함수
-  const uploadImage = async (file: File): Promise<string> => {
-    const formDataToSend = new FormData();
-    formDataToSend.append('file', file);
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formDataToSend,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '업로드 실패');
-    }
-
-    const data = await response.json();
-
-    // 개발 모드 경고 표시
-    if (data.warning) {
-      console.warn(data.warning);
-    }
-
-    return data.url;
-  };
-
-  // 썸네일 업로드
-  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingThumbnail(true);
+  // 상세 이미지 추가
+  const addDetailImage = async (file: File) => {
     try {
       const url = await uploadImage(file);
-      setFormData({ ...formData, thumbnail: url });
+      setDetailImages([...detailImages, url]);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.');
-    } finally {
-      setUploadingThumbnail(false);
-    }
-  };
-
-  // 상세 이미지 업로드
-  const handleDetailImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const uploadIndex = index ?? detailImages.length;
-    setUploadingDetailImages({ ...uploadingDetailImages, [uploadIndex]: true });
-
-    try {
-      const url = await uploadImage(file);
-
-      if (index !== undefined) {
-        // 기존 이미지 교체
-        const newImages = [...detailImages];
-        newImages[index] = url;
-        setDetailImages(newImages);
-      } else {
-        // 새 이미지 추가
-        setDetailImages([...detailImages, url]);
-      }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.');
-    } finally {
-      setUploadingDetailImages({ ...uploadingDetailImages, [uploadIndex]: false });
+      throw error;
     }
   };
 
@@ -159,26 +101,31 @@ export default function ProductsManagement() {
       return;
     }
 
-    const productData: Partial<Product> = {
-      ...formData,
-      detailImages: detailImages,
-    };
+    try {
+      const productData: Partial<Product> = {
+        ...formData,
+        detailImages: detailImages,
+      };
 
-    if (editingProduct) {
-      // 수정
-      setProducts(
-        products.map((p) => (p.id === editingProduct.id ? { ...productData, id: p.id } as Product : p))
-      );
-    } else {
-      // 추가
-      const newProduct: Product = {
-        ...productData,
-        id: Date.now().toString(),
-      } as Product;
-      setProducts([...products, newProduct]);
+      if (editingProduct) {
+        // 수정
+        setProducts(
+          products.map((p) => (p.id === editingProduct.id ? { ...productData, id: p.id } as Product : p))
+        );
+      } else {
+        // 추가
+        const newProduct: Product = {
+          ...productData,
+          id: Date.now().toString(),
+        } as Product;
+        setProducts([...products, newProduct]);
+      }
+
+      closeModal();
+    } catch (error) {
+      // 에러는 useLocalStorage에서 이미 처리됨
+      console.error('제품 저장 실패:', error);
     }
-
-    closeModal();
   };
 
   // 제품 삭제
@@ -315,18 +262,19 @@ export default function ProductsManagement() {
       </div>
 
       {/* 모달 */}
-      {isModalOpen && (
-        <div className={styles.modal}>
-          <div className={styles.modalOverlay} onClick={closeModal}></div>
-          <div className={styles.modalContent} style={{ maxWidth: '800px' }}>
-            <div className={styles.modalHeader}>
-              <h3>{editingProduct ? '제품 수정' : '새 제품 추가'}</h3>
-              <button className={styles.closeBtn} onClick={closeModal}>
-                ✕
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={editingProduct ? '제품 수정' : '새 제품 추가'}
+        size="large"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
+          <div className={styles.modalBody}>
               {/* 기본 정보 */}
               <div className={styles.formSection}>
                 <h4 className={styles.sectionTitle}>기본 정보</h4>
@@ -401,36 +349,15 @@ export default function ProductsManagement() {
               <div className={styles.formSection}>
                 <h4 className={styles.sectionTitle}>이미지</h4>
 
-                <div className={styles.formGroup}>
-                  <label>썸네일 이미지</label>
-                  <div className={styles.fileUploadWrapper}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleThumbnailUpload}
-                      className={styles.fileInput}
-                      id="thumbnail-upload"
-                      disabled={uploadingThumbnail}
-                    />
-                    <label htmlFor="thumbnail-upload" className={styles.fileLabel}>
-                      {uploadingThumbnail ? '업로드 중...' : '📁 파일 선택'}
-                    </label>
-                  </div>
-                  {formData.thumbnail && (
-                    <div className={styles.imagePreview}>
-                      <img src={formData.thumbnail} alt="썸네일 미리보기" />
-                      <button
-                        type="button"
-                        className={styles.imageRemoveBtn}
-                        onClick={() => setFormData({ ...formData, thumbnail: '' })}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <ImageUpload
+                  label="썸네일 이미지"
+                  value={formData.thumbnail}
+                  onChange={(url) => setFormData({ ...formData, thumbnail: url })}
+                  onUpload={uploadImage}
+                  placeholder="제품 썸네일 이미지를 업로드하세요"
+                />
 
-                <div className={styles.formGroup}>
+                <div className={styles.formGroup} style={{ marginTop: '1.5rem' }}>
                   <label>상세 페이지 이미지</label>
 
                   {/* 업로드된 이미지들 */}
@@ -452,19 +379,13 @@ export default function ProductsManagement() {
                   )}
 
                   {/* 새 이미지 추가 */}
-                  <div className={styles.fileUploadWrapper}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleDetailImageUpload(e)}
-                      className={styles.fileInput}
-                      id="detail-image-upload"
-                      disabled={Object.values(uploadingDetailImages).some(Boolean)}
-                    />
-                    <label htmlFor="detail-image-upload" className={styles.fileLabel}>
-                      {Object.values(uploadingDetailImages).some(Boolean) ? '업로드 중...' : '📁 이미지 추가'}
-                    </label>
-                  </div>
+                  <ImageUpload
+                    label=""
+                    value=""
+                    onChange={(url) => setDetailImages([...detailImages, url])}
+                    onUpload={uploadImage}
+                    placeholder="상세 페이지 이미지를 추가하세요"
+                  />
                 </div>
               </div>
 
@@ -587,19 +508,18 @@ export default function ProductsManagement() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={closeModal}>
-                취소
-              </button>
-              <button className={styles.saveBtn} onClick={handleSave}>
-                {editingProduct ? '수정' : '추가'}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+
+          <div className={styles.modalFooter}>
+            <button type="button" className={styles.cancelBtn} onClick={closeModal}>
+              취소
+            </button>
+            <button type="submit" className={styles.saveBtn}>
+              {editingProduct ? '수정' : '추가'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

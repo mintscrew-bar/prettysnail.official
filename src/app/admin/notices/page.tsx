@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { notices as initialNotices, Notice } from '@/data/notices';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import Modal from '@/components/admin/Modal';
 import styles from '../admin.module.scss';
 
 export default function NoticesManagement() {
@@ -222,16 +223,13 @@ export default function NoticesManagement() {
       </div>
 
       {/* 모달 */}
-      {isModalOpen && (
-        <div className={styles.modal}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h2>{editingNotice ? '공지사항 수정' : '공지사항 추가'}</h2>
-              <button onClick={closeModal} className={styles.closeButton}>
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className={styles.form}>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={editingNotice ? '공지사항 수정' : '공지사항 추가'}
+        size="medium"
+      >
+        <form onSubmit={handleSubmit}>
               <div className={styles.formGroup}>
                 <label htmlFor="title">제목 *</label>
                 <input
@@ -309,18 +307,16 @@ export default function NoticesManagement() {
                 </div>
               </div>
 
-              <div className={styles.formActions}>
-                <button type="button" onClick={closeModal} className={styles.cancelButton}>
-                  취소
-                </button>
-                <button type="submit" className={styles.submitButton}>
-                  {editingNotice ? '수정' : '추가'}
-                </button>
-              </div>
-            </form>
+          <div className={styles.modalFooter}>
+            <button type="button" onClick={closeModal} className={styles.cancelBtn}>
+              취소
+            </button>
+            <button type="submit" className={styles.saveBtn}>
+              {editingNotice ? '수정' : '추가'}
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 }

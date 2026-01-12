@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { promotions as initialPromotions, PromotionCard } from '@/data/promotions';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useImageUpload } from '@/hooks/useImageUpload';
+import Modal from '@/components/admin/Modal';
+import ImageUpload from '@/components/admin/ImageUpload';
 import styles from '../admin.module.scss';
 
 export default function PromotionsManagement() {
@@ -13,16 +16,14 @@ export default function PromotionsManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<PromotionCard | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { uploadImage } = useImageUpload();
 
   const [formData, setFormData] = useState<Partial<PromotionCard>>({
     title: '',
     description: '',
-    imageUrl: '',
+    image: '',
     link: '#',
   });
-
-  // 업로드 상태
-  const [uploadingImage, setUploadingImage] = useState(false);
 
   // 필터링된 프로모션 목록
   const filteredPromotions = promotions.filter((promo) =>
@@ -39,7 +40,7 @@ export default function PromotionsManagement() {
       setFormData({
         title: '',
         description: '',
-        imageUrl: '',
+        image: '',
         link: '#',
       });
     }
@@ -53,50 +54,9 @@ export default function PromotionsManagement() {
     setFormData({
       title: '',
       description: '',
-      imageUrl: '',
+      image: '',
       link: '#',
     });
-  };
-
-  // 이미지 업로드 함수
-  const uploadImage = async (file: File): Promise<string> => {
-    const formDataToSend = new FormData();
-    formDataToSend.append('file', file);
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formDataToSend,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '업로드 실패');
-    }
-
-    const data = await response.json();
-
-    // 개발 모드 경고 표시
-    if (data.warning) {
-      console.warn(data.warning);
-    }
-
-    return data.url;
-  };
-
-  // 이미지 업로드 핸들러
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingImage(true);
-    try {
-      const url = await uploadImage(file);
-      setFormData({ ...formData, imageUrl: url });
-    } catch (error) {
-      alert(error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.');
-    } finally {
-      setUploadingImage(false);
-    }
   };
 
   // 프로모션 저장
@@ -117,7 +77,7 @@ export default function PromotionsManagement() {
       // 추가
       const newPromotion: PromotionCard = {
         ...formData,
-        id: promotions.length + 1,
+        id: `promo-${Date.now()}`,
       } as PromotionCard;
       setPromotions([...promotions, newPromotion]);
     }
@@ -126,7 +86,7 @@ export default function PromotionsManagement() {
   };
 
   // 프로모션 삭제
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     if (confirm('정말 삭제하시겠습니까?')) {
       setPromotions(promotions.filter((p) => p.id !== id));
     }
@@ -177,8 +137,8 @@ export default function PromotionsManagement() {
         {filteredPromotions.map((promotion, index) => (
           <div key={promotion.id} className={styles.promoCard}>
             <div className={styles.promoImage}>
-              {promotion.imageUrl ? (
-                <img src={promotion.imageUrl} alt={promotion.title} />
+              {promotion.image ? (
+                <img src={promotion.image} alt={promotion.title} />
               ) : (
                 <div className={styles.noImage}>이미지 없음</div>
               )}
@@ -234,89 +194,72 @@ export default function PromotionsManagement() {
       )}
 
       {/* 모달 */}
-      {isModalOpen && (
-        <div className={styles.modal}>
-          <div className={styles.modalOverlay} onClick={closeModal}></div>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3>{editingPromotion ? '프로모션 수정' : '새 프로모션 추가'}</h3>
-              <button className={styles.closeBtn} onClick={closeModal}>
-                ✕
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label>제목 *</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="프로모션 제목"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>설명 *</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="프로모션 설명"
-                  rows={4}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>이미지</label>
-                <div className={styles.fileUploadWrapper}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className={styles.fileInput}
-                    id="promo-image-upload"
-                    disabled={uploadingImage}
-                  />
-                  <label htmlFor="promo-image-upload" className={styles.fileLabel}>
-                    {uploadingImage ? '업로드 중...' : '📁 파일 선택'}
-                  </label>
-                </div>
-                {formData.imageUrl && (
-                  <div className={styles.imagePreview}>
-                    <img src={formData.imageUrl} alt="미리보기" />
-                    <button
-                      type="button"
-                      className={styles.imageRemoveBtn}
-                      onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>링크 URL</label>
-                <input
-                  type="text"
-                  value={formData.link}
-                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                  placeholder="https://example.com"
-                />
-              </div>
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={closeModal}>
-                취소
-              </button>
-              <button className={styles.saveBtn} onClick={handleSave}>
-                {editingPromotion ? '수정' : '추가'}
-              </button>
-            </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={editingPromotion ? '프로모션 수정' : '새 프로모션 추가'}
+        size="medium"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
+          <div className={styles.formGroup}>
+            <label>
+              제목 <span className={styles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="프로모션 제목"
+              required
+            />
           </div>
-        </div>
-      )}
+
+          <div className={styles.formGroup}>
+            <label>
+              설명 <span className={styles.required}>*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="프로모션 설명"
+              rows={4}
+              required
+            />
+          </div>
+
+          <ImageUpload
+            label="이미지"
+            value={formData.image}
+            onChange={(url) => setFormData({ ...formData, image: url })}
+            onUpload={uploadImage}
+            placeholder="프로모션 이미지를 업로드하세요"
+          />
+
+          <div className={styles.formGroup}>
+            <label>링크 URL</label>
+            <input
+              type="text"
+              value={formData.link}
+              onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+              placeholder="https://example.com"
+            />
+          </div>
+
+          <div className={styles.modalFooter}>
+            <button type="button" className={styles.cancelBtn} onClick={closeModal}>
+              취소
+            </button>
+            <button type="submit" className={styles.saveBtn}>
+              {editingPromotion ? '수정' : '추가'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

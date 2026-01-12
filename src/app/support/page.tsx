@@ -40,14 +40,6 @@ export default function SupportPage() {
             </div>
             <div className={styles.contactInfo}>
             <div className={styles.contactItem}>
-              <div className={styles.contactIcon}>📞</div>
-              <div>
-                <h3>전화 문의</h3>
-                <p>010-0000-0000</p>
-                <span>평일 09:00 - 18:00</span>
-              </div>
-            </div>
-            <div className={styles.contactItem}>
               <div className={styles.contactIcon}>✉️</div>
               <div>
                 <h3>이메일 문의</h3>
@@ -55,19 +47,11 @@ export default function SupportPage() {
               </div>
             </div>
             <a href="#" className={styles.contactItem}>
-              <div className={styles.contactIcon}>💬</div>
-              <div>
-                <h3>카카오톡 문의</h3>
-                <p>@이쁜우렁이</p>
-                <span>평일 09:00 - 18:00</span>
-              </div>
-            </a>
-            <a href="#" className={styles.contactItem}>
-              <div className={styles.contactIcon}>🟢</div>
+              <div className={styles.contactIcon}><img src="/icons/NStore_1.svg" alt="" /></div>
               <div>
                 <h3>네이버 톡톡</h3>
-                <p>이쁜우렁이 스토어</p>
-                <span>평일 09:00 - 18:00</span>
+                <p>이쁜우렁이 스마트스토어</p>
+                <span>평일 09:00 - 16:00</span>
               </div>
             </a>
             </div>

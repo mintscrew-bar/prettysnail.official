@@ -726,19 +726,35 @@
 // 스토리텔링 섹션
 // ==========================================
 .storySection {
-  padding: var(--spacing-2xl) 0;
-  background: var(--color-bg-cream);
+  padding: clamp(4rem, 10vh, 8rem) 0;
+  background: linear-gradient(180deg, #fdfbf7 0%, #f7f3eb 100%);
   max-width: 100vw;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 10% 20%, rgba(93, 122, 74, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 90% 80%, rgba(166, 124, 82, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+  }
 
   @media (max-width: 768px) {
-    padding: var(--spacing-xl) 0;
+    padding: var(--spacing-2xl) 0;
   }
 }
 
 .storyContainer {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 0 var(--spacing-lg);
+  position: relative;
+  z-index: 1;
 
   @media (max-width: 768px) {
     padding: 0 var(--spacing-md);
@@ -747,30 +763,46 @@
 
 .storyHeader {
   text-align: center;
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: clamp(3rem, 6vh, 5rem);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(to right, transparent, var(--color-primary), transparent);
+  }
 
   @media (max-width: 768px) {
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-2xl);
   }
 }
 
 .storyTitle {
   font-family: 'memomentKkukKkuk', sans-serif;
-  font-size: var(--font-size-3xl);
-  color: var(--color-text);
-  margin-bottom: var(--spacing-xs);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  color: #2d2d2d;
+  margin-bottom: var(--spacing-md);
+  font-weight: 400;
+  letter-spacing: -0.02em;
 
   @media (max-width: 768px) {
-    font-size: var(--font-size-2xl);
+    font-size: clamp(2rem, 7vw, 3rem);
   }
 }
 
 .storySubtitle {
-  font-size: var(--font-size-base);
-  color: var(--color-text-muted);
+  font-family: 'Pretendard Variable', sans-serif;
+  font-size: clamp(1.0625rem, 2vw, 1.25rem);
+  color: #666;
+  font-weight: 400;
 
   @media (max-width: 768px) {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
   }
 }
 

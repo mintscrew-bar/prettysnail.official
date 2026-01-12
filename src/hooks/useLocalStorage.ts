@@ -27,6 +27,17 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       }
     } catch (error) {
       console.error(error);
+      // QuotaExceededError 처리
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        alert(
+          'localStorage 용량이 초과되었습니다.\n\n' +
+          '해결 방법:\n' +
+          '1. 더 작은 이미지를 사용하세요 (2MB 이하 권장)\n' +
+          '2. 브라우저 개발자 도구(F12) > Application > Storage > Local Storage에서 데이터를 삭제하세요\n' +
+          '3. Vercel에 배포하면 Blob Storage를 사용하여 이 문제가 해결됩니다'
+        );
+      }
+      throw error;
     }
   };
 
