@@ -119,7 +119,6 @@ export default function MainBanner() {
           loop
           playsInline
           preload="metadata"
-          loading="lazy"
         >
           <source src="/images/banner/farm.mp4" type="video/mp4" />
         </video>
