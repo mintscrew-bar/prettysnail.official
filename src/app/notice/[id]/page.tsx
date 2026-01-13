@@ -31,7 +31,14 @@ export default function NoticeDetailPage() {
           const updatedNotices = notices.map((n) =>
             n.id === noticeId ? { ...n, views: (n.views || 0) + 1 } : n
           );
+          // 저장 및 로컬 상태 갱신
           localStorage.setItem('admin-notices', JSON.stringify(updatedNotices));
+          const updatedNotice = updatedNotices.find((n) => n.id === noticeId) || null;
+          setAllNotices(updatedNotices);
+          setNotice(updatedNotice);
+
+          // 같은 탭에서 변경사항을 반영하기 위한 커스텀 이벤트
+          window.dispatchEvent(new Event('localStorageUpdated'));
         }
       }
     }

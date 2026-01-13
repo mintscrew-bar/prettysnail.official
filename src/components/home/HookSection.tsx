@@ -2,12 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import styles from '@/app/page.module.scss';
 import { promotions } from '@/data/promotions';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function HookSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -48,16 +44,30 @@ export default function HookSection() {
   }, []);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top 80%',
-        once: true,
-        onEnter: () => setIsVisible(true),
-      });
-    }, sectionRef);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -20% 0px',
+      }
+    );
 
-    return () => ctx.revert();
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
   }, []);
 
   const scroll = (direction: 'prev' | 'next') => {
@@ -71,30 +81,28 @@ export default function HookSection() {
     <section ref={sectionRef} className={styles.hookSection}>
       <div className={styles.hookContainer}>
         <div className={styles.hookHeader}>
-          <div>
-            <h2 className={styles.hookTitle}>소식 & 이벤트</h2>
-            <p className={styles.hookSubtitle}>이쁜우렁이의 새로운 소식을 만나보세요</p>
-          </div>
-          <div className={styles.carouselNav}>
-            <button
-              className={styles.navBtn}
-              onClick={() => scroll('prev')}
-              aria-label="이전"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-            <button
-              className={styles.navBtn}
-              onClick={() => scroll('next')}
-              aria-label="다음"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </button>
-          </div>
+          <h2 className={styles.hookTitle}>소식 & 이벤트</h2>
+          <p className={styles.hookSubtitle}>이쁜우렁이의 새로운 소식을 만나보세요</p>
+        </div>
+        <div className={styles.carouselNav}>
+          <button
+            className={styles.navBtn}
+            onClick={() => scroll('prev')}
+            aria-label="이전"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            className={styles.navBtn}
+            onClick={() => scroll('next')}
+            aria-label="다음"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
         </div>
         <div ref={cardsRef} className={`${styles.promoCards} ${isVisible ? styles.visible : ''}`}>
           {allPromotions.map((promo) => (

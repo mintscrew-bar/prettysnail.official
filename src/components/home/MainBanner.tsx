@@ -83,20 +83,22 @@ export default function MainBanner() {
         pin: true,
         pinSpacing: true,
         anticipatePin: 1,
-        scrub: 0.5,
+        scrub: 0.3, // 더 빠른 반응으로 최적화
         onUpdate: (self) => {
           const progress = self.progress;
           // 콘텐츠 페이드아웃 (처음 50%에서 사라짐)
           const contentOpacity = Math.max(0, 1 - progress * 2.5);
-          gsap.set(contentRef.current, {
-            opacity: contentOpacity,
-            scale: 1 + progress * 0.05,
-            y: progress * -50,
-          });
+
+          // will-change 추가 및 GPU 가속
+          if (contentRef.current) {
+            contentRef.current.style.opacity = contentOpacity.toString();
+            contentRef.current.style.transform = `translate3d(0, ${progress * -50}px, 0) scale(${1 + progress * 0.05})`;
+          }
+
           // 오버레이가 점점 투명해지면서 영상이 드러남
-          gsap.set(overlayRef.current, {
-            opacity: 1 - progress,
-          });
+          if (overlayRef.current) {
+            overlayRef.current.style.opacity = (1 - progress).toString();
+          }
         },
       });
 
@@ -116,7 +118,8 @@ export default function MainBanner() {
           muted
           loop
           playsInline
-          poster="/images/banner/7.png"
+          preload="metadata"
+          loading="lazy"
         >
           <source src="/images/banner/farm.mp4" type="video/mp4" />
         </video>

@@ -36,8 +36,8 @@ export default function Homepage() {
       <main>
         <MainBanner />
         <HookSection />
-        <StorytellingSection />
         <ProductShowcase />
+        <StorytellingSection />
         <OutroSection />
       </main>
       <Footer />

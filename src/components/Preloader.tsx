@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
+import { useEffect, useState } from 'react';
 import styles from './Preloader.module.scss';
 
 interface PreloaderProps {
@@ -9,51 +8,28 @@ interface PreloaderProps {
 }
 
 export default function Preloader({ onComplete }: PreloaderProps) {
-  const preloaderRef = useRef<HTMLDivElement>(null);
-  const logoRef = useRef<HTMLImageElement>(null);
+  const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    const tl = gsap.timeline({
-      onComplete: () => {
-        onComplete();
-      },
-    });
+    // 로고 애니메이션 시간 (0.8s) + 대기 (0.5s) + 펄스 (0.5s) + 대기 (0.3s) = 2.1초
+    const exitTimer = setTimeout(() => {
+      setIsExiting(true);
+    }, 2100);
 
-    // 로고 등장 애니메이션
-    tl.fromTo(
-      logoRef.current,
-      { opacity: 0, scale: 0.7, rotate: -10 },
-      { opacity: 1, scale: 1, rotate: 0, duration: 0.8, ease: 'back.out(1.7)' }
-    )
-      // 잠시 대기
-      .to(logoRef.current, {
-        scale: 1.05,
-        duration: 0.3,
-        ease: 'power2.inOut',
-        delay: 0.5,
-      })
-      .to(logoRef.current, {
-        scale: 1,
-        duration: 0.2,
-        ease: 'power2.inOut',
-      })
-      // 프리로더 전체가 위로 사라짐
-      .to(preloaderRef.current, {
-        yPercent: -100,
-        duration: 0.8,
-        ease: 'power3.inOut',
-        delay: 0.3,
-      });
+    // 전체 애니메이션 완료 후 콜백 (exit 애니메이션 0.8초 추가)
+    const completeTimer = setTimeout(() => {
+      onComplete();
+    }, 2900);
 
     return () => {
-      tl.kill();
+      clearTimeout(exitTimer);
+      clearTimeout(completeTimer);
     };
   }, [onComplete]);
 
   return (
-    <div ref={preloaderRef} className={styles.preloader}>
+    <div className={`${styles.preloader} ${isExiting ? styles.exiting : ''}`}>
       <img
-        ref={logoRef}
         src="/logo/Asset 10.png"
         alt="이쁜우렁이"
         className={styles.preloaderLogo}

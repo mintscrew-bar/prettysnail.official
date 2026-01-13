@@ -245,6 +245,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background: linear-gradient(135deg, #f7f3eb 0%, #e8dfc9 100%);
 }
 
 .bgVideo {
@@ -255,8 +256,9 @@
   min-height: 100%;
   width: auto;
   height: auto;
-  transform: translate(-50%, -50%);
+  transform: translate3d(-50%, -50%, 0);
   object-fit: cover;
+  backface-visibility: hidden;
 }
 
 .bgOverlay {
@@ -271,6 +273,8 @@
     rgba(247, 243, 235, 0.80) 50%,
     rgba(240, 233, 220, 0.85) 100%
   );
+  will-change: opacity;
+  backface-visibility: hidden;
 }
 
 .mainSequenceContent {
@@ -284,6 +288,9 @@
   padding: var(--spacing-md);
   text-align: center;
   color: var(--color-text);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 
   @media (max-width: 768px) {
     padding: var(--spacing-sm) var(--spacing-md);
@@ -458,15 +465,11 @@
 }
 
 .hookHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  text-align: center;
   margin-bottom: var(--spacing-lg);
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
   }
 }
 
@@ -492,7 +495,9 @@
 
 .carouselNav {
   display: flex;
+  justify-content: center;
   gap: 8px;
+  margin-bottom: var(--spacing-md);
 
   @media (max-width: 768px) {
     display: none;
@@ -821,6 +826,44 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-xl);
   align-items: center;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+
+  // 초기 상태: 보이지 않음
+  .storyImage,
+  .storyContent {
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+
+  .storyImage {
+    transform: translateY(20px);
+  }
+
+  .storyContent {
+    transform: translateX(0);
+  }
+
+  // visible 클래스가 추가되면 나타남
+  &.visible {
+    .storyImage {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+
+    .storyContent {
+      opacity: 1;
+      transform: translateX(0);
+      transition: opacity 0.6s ease-out 0.1s, transform 0.6s ease-out 0.1s;
+    }
+  }
+
+  // 애니메이션 완료 후 will-change 제거
+  &.visible .storyImage,
+  &.visible .storyContent {
+    animation: removeWillChange 0.6s 0.8s forwards;
+  }
 
   &.reverse {
     .storyImage {
@@ -848,10 +891,15 @@
   }
 }
 
+@keyframes removeWillChange {
+  to {
+    will-change: auto;
+  }
+}
+
 .storyImage {
   position: relative;
   width: 100%;
-  opacity: 0;
 }
 
 .imageWrapper {
@@ -861,13 +909,9 @@
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout style paint;
 
   @media (max-width: 768px) {
     border-radius: 16px;
@@ -949,7 +993,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  opacity: 0;
 
   @media (max-width: 968px) {
     gap: 12px;
@@ -1098,6 +1141,21 @@
   @media (max-width: 768px) {
     gap: var(--spacing-sm);
   }
+
+  &.filterAnimate .productCard {
+    animation: filterFadeIn 0.4s ease-out;
+  }
+}
+
+@keyframes filterFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .productCard {
@@ -1108,6 +1166,20 @@
   overflow: hidden;
   transition: all var(--transition-base);
   border: 1px solid rgba(0, 0, 0, 0.05);
+  opacity: 0;
+  transform: translateY(40px);
+
+  .productGrid.visible & {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+
+    @for $i from 1 through 6 {
+      &:nth-child(#{$i}) {
+        transition-delay: #{$i * 0.1}s;
+      }
+    }
+  }
 
   &:hover {
     transform: translateY(-8px) rotateX(2deg);
@@ -1403,6 +1475,14 @@
 .outroContent {
   text-align: center;
   color: white;
+  opacity: 0;
+  transform: translateY(50px);
+  transition: opacity 1s ease-out, transform 1s ease-out;
+
+  &.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .outroTitle {

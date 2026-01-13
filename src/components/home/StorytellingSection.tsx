@@ -1,12 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Image from 'next/image';
 import styles from '@/app/page.module.scss';
 import { storySteps, IconType } from '@/data/storySteps';
-
-gsap.registerPlugin(ScrollTrigger);
 
 // Icon 렌더링 함수
 const renderIcon = (iconType: IconType) => {
@@ -62,58 +59,28 @@ export default function StorytellingSection() {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const items = gsap.utils.toArray(`.${styles.storyItem}`);
-
-      items.forEach((item: any, index) => {
-        const image = item.querySelector(`.${styles.storyImage}`);
-        const content = item.querySelector(`.${styles.storyContent}`);
-
-        // 이미지 스케일 & 페이드 인 효과
-        gsap.fromTo(
-          image,
-          {
-            opacity: 0,
-            scale: 0.85,
-          },
-          {
-            opacity: 1,
-            scale: 1,
-            duration: 1,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: item,
-              start: 'top 75%',
-              end: 'top 25%',
-              toggleActions: 'play none none reverse',
-            },
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.visible);
+            // 한 번 나타난 후에는 다시 관찰하지 않음
+            observer.unobserve(entry.target);
           }
-        );
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -100px 0px',
+      }
+    );
 
-        // 텍스트 슬라이드 인 효과
-        gsap.fromTo(
-          content,
-          {
-            opacity: 0,
-            x: index % 2 === 0 ? -60 : 60,
-          },
-          {
-            opacity: 1,
-            x: 0,
-            duration: 0.8,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: item,
-              start: 'top 75%',
-              end: 'top 25%',
-              toggleActions: 'play none none reverse',
-            },
-          }
-        );
-      });
-    }, sectionRef);
+    const items = sectionRef.current?.querySelectorAll(`.${styles.storyItem}`);
+    items?.forEach((item) => observer.observe(item));
 
-    return () => ctx.revert();
+    return () => {
+      items?.forEach((item) => observer.unobserve(item));
+    };
   }, []);
 
   return (
@@ -134,19 +101,17 @@ export default function StorytellingSection() {
             >
               <div className={styles.storyImage}>
                 <div className={styles.imageWrapper}>
-                  <img
+                  <Image
                     src={`/images/story/${step.image}`}
                     alt={step.title}
-                    onError={(e) => {
-                      // 이미지 로드 실패 시 플레이스홀더 표시
-                      e.currentTarget.style.display = 'none';
-                      const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (placeholder) placeholder.style.display = 'flex';
-                    }}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
+                    style={{ objectFit: 'cover' }}
+                    loading="lazy"
+                    quality={85}
+                    placeholder="blur"
+                    blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y3ZjNlYiIvPjwvc3ZnPg=="
                   />
-                  <div className={styles.imagePlaceholder}>
-                    <div className={styles.placeholderIcon}>{renderIcon(step.iconType)}</div>
-                  </div>
                 </div>
                 <span className={styles.stepNumber}>{step.id}</span>
               </div>

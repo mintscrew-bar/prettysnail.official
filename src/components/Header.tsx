@@ -1,15 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import gsap from 'gsap';
 import styles from './Header.module.scss';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,103 +17,15 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 모바일 메뉴 애니메이션
+  // 모바일 메뉴 Body 스크롤 제어
   useEffect(() => {
-    if (!mobileMenuRef.current) return;
-
-    const ctx = gsap.context(() => {
-      const menuLinks = mobileMenuRef.current?.querySelectorAll(`.${styles.mobileNavLink}`);
-
-      if (isMobileMenuOpen) {
-        // 메뉴 열기
-        const tl = gsap.timeline();
-
-        // 오버레이 페이드 인
-        if (overlayRef.current) {
-          tl.fromTo(
-            overlayRef.current,
-            { opacity: 0 },
-            { opacity: 1, duration: 0.3, ease: 'power2.out' },
-            0
-          );
-        }
-
-        // 드로어 슬라이드 인
-        tl.fromTo(
-          mobileMenuRef.current,
-          { x: '100%' },
-          { x: '0%', duration: 0.4, ease: 'power3.out' },
-          0
-        );
-
-        // 메뉴 아이템 순차 등장
-        if (menuLinks) {
-          tl.fromTo(
-            menuLinks,
-            {
-              opacity: 0,
-              x: 50,
-            },
-            {
-              opacity: 1,
-              x: 0,
-              duration: 0.3,
-              stagger: 0.08,
-              ease: 'power2.out',
-            },
-            0.2
-          );
-        }
-
-        // Body 스크롤 락
-        document.body.style.overflow = 'hidden';
-      } else {
-        // 메뉴 닫기
-        const tl = gsap.timeline();
-
-        // 메뉴 아이템 순차 사라짐
-        if (menuLinks) {
-          tl.to(menuLinks, {
-            opacity: 0,
-            x: 30,
-            duration: 0.2,
-            stagger: 0.04,
-            ease: 'power2.in',
-          });
-        }
-
-        // 드로어 슬라이드 아웃
-        tl.to(
-          mobileMenuRef.current,
-          {
-            x: '100%',
-            duration: 0.3,
-            ease: 'power3.in',
-          },
-          0.1
-        );
-
-        // 오버레이 페이드 아웃
-        if (overlayRef.current) {
-          tl.to(
-            overlayRef.current,
-            {
-              opacity: 0,
-              duration: 0.2,
-              ease: 'power2.in',
-            },
-            0.1
-          );
-        }
-
-        // Body 스크롤 락 해제
-        document.body.style.overflow = '';
-      }
-    }, mobileMenuRef);
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
 
     return () => {
-      ctx.revert();
-      // 컴포넌트 언마운트 시 스크롤 락 해제
       document.body.style.overflow = '';
     };
   }, [isMobileMenuOpen]);
@@ -179,7 +88,6 @@ export default function Header() {
 
       {/* 모바일 메뉴 */}
       <div
-        ref={mobileMenuRef}
         className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.open : ''}`}
         aria-hidden={!isMobileMenuOpen}
       >
@@ -222,7 +130,6 @@ export default function Header() {
       {/* 오버레이 */}
       {isMobileMenuOpen && (
         <div
-          ref={overlayRef}
           className={styles.mobileMenuOverlay}
           onClick={closeMobileMenu}
           aria-hidden="true"

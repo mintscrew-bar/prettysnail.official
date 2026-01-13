@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Product, categories as initialCategories, products as initialProducts } from '@/data/products';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -177,7 +178,15 @@ export default function ProductsPage() {
               {/* 이미지 */}
               <div className={styles.productImage}>
                 {product.thumbnail ? (
-                  <img src={product.thumbnail} alt={product.name} />
+                  <Image
+                    src={product.thumbnail}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    style={{ objectFit: 'cover' }}
+                    loading="lazy"
+                    quality={85}
+                  />
                 ) : (
                   <div className={styles.noImage}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

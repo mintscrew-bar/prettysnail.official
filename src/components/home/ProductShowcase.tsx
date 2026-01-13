@@ -3,12 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import styles from '@/app/page.module.scss';
 import { products, categories as initialCategories } from '@/data/products';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function ProductShowcase() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -16,6 +12,8 @@ export default function ProductShowcase() {
   const [allProducts, setAllProducts] = useState(products);
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [categories, setCategories] = useState(initialCategories);
+  const [isVisible, setIsVisible] = useState(false);
+  const [animateFilter, setAnimateFilter] = useState(false);
 
   // localStorage에서 제품 데이터 로드 및 초기화
   useEffect(() => {
@@ -78,43 +76,41 @@ export default function ProductShowcase() {
   }, [selectedCategory, allProducts]);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        `.${styles.productCard}`,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.5,
-          stagger: 0.1,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 80%',
-            once: true,
-          },
-        }
-      );
-    }, sectionRef);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -20% 0px',
+      }
+    );
 
-    return () => ctx.revert();
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
   }, []);
 
   const handleCategoryChange = (categoryId: string) => {
+    // 필터 변경 시 애니메이션 트리거
+    setAnimateFilter(true);
     setSelectedCategory(categoryId);
 
-    // 필터 변경 시 애니메이션
-    gsap.fromTo(
-      `.${styles.productCard}`,
-      { opacity: 0, scale: 0.9 },
-      {
-        opacity: 1,
-        scale: 1,
-        duration: 0.4,
-        stagger: 0.08,
-        ease: 'back.out(1.2)',
-      }
-    );
+    // 애니메이션 완료 후 상태 리셋
+    setTimeout(() => {
+      setAnimateFilter(false);
+    }, 400);
   };
 
   return (
@@ -143,7 +139,7 @@ export default function ProductShowcase() {
         </div>
 
         {/* 제품 그리드 */}
-        <div className={styles.productGrid}>
+        <div className={`${styles.productGrid} ${isVisible ? styles.visible : ''} ${animateFilter ? styles.filterAnimate : ''}`}>
           {filteredProducts.slice(0, 6).map((product) => (
             <Link
               key={product.id}
