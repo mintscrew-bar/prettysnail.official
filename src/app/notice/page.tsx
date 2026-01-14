@@ -11,6 +11,8 @@ export default function NoticePage() {
   const [allNotices, setAllNotices] = useState<Notice[]>([]);
   const [filteredNotices, setFilteredNotices] = useState<Notice[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
 
   // localStorage에서 공지사항 데이터 로드
   useEffect(() => {
@@ -57,7 +59,19 @@ export default function NoticePage() {
     });
 
     setFilteredNotices(filtered);
+    setCurrentPage(1); // 필터 변경 시 첫 페이지로
   }, [allNotices, selectedCategory]);
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(filteredNotices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentNotices = filteredNotices.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
@@ -109,7 +123,7 @@ export default function NoticePage() {
                 <p>등록된 공지사항이 없습니다.</p>
               </div>
             ) : (
-              filteredNotices.map((notice) => (
+              currentNotices.map((notice) => (
                 <Link
                   key={notice.id}
                   href={`/notice/${notice.id}`}
@@ -141,15 +155,43 @@ export default function NoticePage() {
                     {notice.content.length > 100 && '...'}
                   </p>
                   <div className={styles.noticeFooter}>
-                    <span className={styles.viewCount}>
-                      👁️ {notice.views || 0}
-                    </span>
                     <span className={styles.readMore}>자세히 보기 →</span>
                   </div>
                 </Link>
               ))
             )}
           </div>
+
+          {/* 페이지네이션 */}
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <button
+                className={styles.pageBtn}
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                이전
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  className={`${styles.pageBtn} ${currentPage === page ? styles.active : ''}`}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                className={styles.pageBtn}
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                다음
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <Footer />

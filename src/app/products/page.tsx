@@ -14,6 +14,8 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high'>('newest');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 12;
 
   // localStorage에서 제품 데이터 로드 및 초기화
   useEffect(() => {
@@ -85,6 +87,22 @@ export default function ProductsPage() {
           return Number(b.id) - Number(a.id);
       }
     });
+
+  // 필터 변경 시 첫 페이지로
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchTerm, sortBy]);
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
@@ -158,7 +176,7 @@ export default function ProductsPage() {
       {/* 제품 그리드 */}
       <div className={styles.container}>
         <div className={styles.productsGrid}>
-          {filteredProducts.map((product) => (
+          {currentProducts.map((product) => (
             <Link
               key={product.id}
               href={`/products/${product.id}`}
@@ -235,6 +253,37 @@ export default function ProductsPage() {
             <div className={styles.emptyIcon}>📦</div>
             <h3>제품이 없습니다</h3>
             <p>검색 조건을 변경하거나 다른 카테고리를 선택해보세요.</p>
+          </div>
+        )}
+
+        {/* 페이지네이션 */}
+        {totalPages > 1 && (
+          <div className={styles.pagination}>
+            <button
+              className={styles.pageBtn}
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              이전
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                className={`${styles.pageBtn} ${currentPage === page ? styles.active : ''}`}
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              className={styles.pageBtn}
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              다음
+            </button>
           </div>
         )}
       </div>

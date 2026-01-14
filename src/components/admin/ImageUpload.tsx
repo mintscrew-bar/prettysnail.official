@@ -12,6 +12,7 @@ interface ImageUploadProps {
   uploading?: boolean;
   placeholder?: string;
   required?: boolean;
+  highQuality?: boolean; // 상세 이미지용 고품질 압축
 }
 
 export default function ImageUpload({
@@ -22,17 +23,25 @@ export default function ImageUpload({
   uploading = false,
   placeholder = '이미지를 업로드하세요',
   required = false,
+  highQuality = false,
 }: ImageUploadProps) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      // 이미지 압축 (2MB 이상일 경우만)
+      // 이미지 압축 (1MB 이상일 경우)
       let fileToUpload = file;
-      if (file.size > 2 * 1024 * 1024) {
+      if (file.size > 1 * 1024 * 1024) {
         console.log('이미지 압축 시작...');
-        fileToUpload = await compressImage(file, 1200, 1200, 0.8);
+
+        if (highQuality) {
+          // 상세 이미지: 더 크고 높은 품질
+          fileToUpload = await compressImage(file, 3000, 3000, 0.92);
+        } else {
+          // 썸네일: 적당한 크기와 품질
+          fileToUpload = await compressImage(file, 1600, 1600, 0.88);
+        }
       }
 
       const url = await onUpload(fileToUpload);

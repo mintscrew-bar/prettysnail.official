@@ -27,19 +27,29 @@ export default function NoticeDetailPage() {
         if (currentNotice) {
           setNotice(currentNotice);
 
-          // 조회수 증가
-          const updatedNotices = notices.map((n) =>
-            n.id === noticeId ? { ...n, views: (n.views || 0) + 1 } : n
-          );
-          // 저장 및 로컬 상태 갱신
-          localStorage.setItem("admin-notices", JSON.stringify(updatedNotices));
-          const updatedNotice =
-            updatedNotices.find((n) => n.id === noticeId) || null;
-          setAllNotices(updatedNotices);
-          setNotice(updatedNotice);
+          // 세션 내 중복 조회 방지
+          const viewedKey = `notice-viewed-${noticeId}`;
+          const hasViewed = sessionStorage.getItem(viewedKey);
 
-          // 같은 탭에서 변경사항을 반영하기 위한 커스텀 이벤트
-          window.dispatchEvent(new Event("localStorageUpdated"));
+          if (!hasViewed) {
+            // 조회수 증가 (처음 조회하는 경우만)
+            const updatedNotices = notices.map((n) =>
+              n.id === noticeId ? { ...n, views: (n.views || 0) + 1 } : n
+            );
+
+            // 저장 및 로컬 상태 갱신
+            localStorage.setItem("admin-notices", JSON.stringify(updatedNotices));
+            const updatedNotice =
+              updatedNotices.find((n) => n.id === noticeId) || null;
+            setAllNotices(updatedNotices);
+            setNotice(updatedNotice);
+
+            // 세션에 조회 기록 저장
+            sessionStorage.setItem(viewedKey, "true");
+
+            // 같은 탭에서 변경사항을 반영하기 위한 커스텀 이벤트
+            window.dispatchEvent(new Event("localStorageUpdated"));
+          }
         }
       }
     }
@@ -112,7 +122,6 @@ export default function NoticeDetailPage() {
             <h1 className={styles.title}>{notice.title}</h1>
             <div className={styles.meta}>
               <span className={styles.date}>{formatDate(notice.date)}</span>
-              <span className={styles.views}>👁️ {notice.views || 0}</span>
             </div>
           </div>
 

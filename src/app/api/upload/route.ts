@@ -29,15 +29,14 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ url: blob.url });
     } else {
-      // 로컬 개발 환경: 이미지 압축 후 base64 데이터 URL로 변환
+      // 로컬 개발 환경: base64 데이터 URL로 변환
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // 이미지 압축 (Sharp 없이 Canvas API 사용을 위해 클라이언트에서 처리하도록 안내)
-      // 여기서는 원본 그대로 반환하되, 크기 제한을 더 엄격하게
-      if (file.size > 2 * 1024 * 1024) {
+      // 개발 모드에서는 5MB까지 허용
+      if (file.size > 5 * 1024 * 1024) {
         return NextResponse.json({
-          error: '개발 모드에서는 이미지 크기가 2MB 이하여야 합니다. Vercel에 배포하면 10MB까지 가능합니다.'
+          error: '개발 모드에서는 이미지 크기가 5MB 이하여야 합니다. Vercel에 배포하면 10MB까지 가능합니다.'
         }, { status: 400 });
       }
 

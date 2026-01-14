@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { Product, products as initialProducts } from '@/data/products';
 import Header from '@/components/Header';
@@ -117,14 +116,9 @@ export default function ProductDetailPage() {
             {/* 썸네일 이미지 */}
             <div className={styles.detailImage}>
               {product.thumbnail ? (
-                <Image
+                <img
                   src={product.thumbnail}
                   alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  style={{ objectFit: 'cover' }}
-                  priority
-                  quality={90}
                 />
               ) : (
                 <div className={styles.noImage}>
@@ -216,14 +210,6 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* 스토어가 없는 경우 */}
-              {storeButtons.length === 0 && (
-                <div className={styles.noStoreMessage}>
-                  <p>현재 온라인 구매가 불가능합니다.</p>
-                  <p>문의: 010-0000-0000</p>
-                </div>
-              )}
-
               {/* 추가 정보 */}
               <div className={styles.additionalInfo}>
                 <div className={styles.infoItem}>
@@ -252,14 +238,10 @@ export default function ProductDetailPage() {
             <div className={styles.detailImagesGrid}>
               {product.detailImages.map((imageUrl, index) => (
                 <div key={index} className={styles.detailImageItem}>
-                  <Image
+                  <img
                     src={imageUrl}
                     alt={`${product.name} 상세 이미지 ${index + 1}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 800px"
-                    style={{ objectFit: 'contain' }}
                     loading="lazy"
-                    quality={85}
                   />
                 </div>
               ))}
@@ -282,14 +264,10 @@ export default function ProductDetailPage() {
                 >
                   <div className={styles.relatedImage}>
                     {relatedProduct.thumbnail ? (
-                      <Image
+                      <img
                         src={relatedProduct.thumbnail}
                         alt={relatedProduct.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, 33vw"
-                        style={{ objectFit: 'cover' }}
                         loading="lazy"
-                        quality={85}
                       />
                     ) : (
                       <div className={styles.noImage}>이미지 없음</div>

@@ -19,22 +19,13 @@ export default function Footer() {
               안심하고 먹는 건강한 우렁이
             </p>
             <div className={styles.footerSocial}>
-              <a href="#" aria-label="카카오톡">
+              <a href="#" aria-label="카카오톡 채널">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z" />
                 </svg>
               </a>
-              <a href="#" aria-label="인스타그램">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                </svg>
-              </a>
-              <a href="#" aria-label="네이버 블로그">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M16.273 12.845 7.376 0H0v24h7.726l8.898-12.845L24 24V0h-7.727z" />
-                </svg>
+              <a href="#" aria-label="네이버 톡톡" className={styles.naverIcon}>
+                N
               </a>
             </div>
           </div>
@@ -63,17 +54,12 @@ export default function Footer() {
 
         <div className={styles.footerBottom}>
           <div className={styles.footerInfo}>
-            <p>상호명: 이쁜우렁이 | 대표: 홍길동</p>
-            <p>사업자등록번호: 000-00-00000 | 통신판매업신고: 제0000-경산-0000호</p>
-            <p>주소: 경상북도 경산시</p>
-            <p>이메일: contact@prettysnail.com | 전화: 010-0000-0000</p>
-          </div>
-          <div className={styles.footerLegal}>
-            <a href="#">개인정보처리방침</a>
-            <a href="#">이용약관</a>
+            <p>상호명: 영어조합법인 이쁜우렁이 | 대표: 김선하</p>
+            <p>주소: 부산 강서구 입소정관길 134-78</p>
+            <p>사업자등록번호: - | 통신판매업신고: -</p>
           </div>
           <p className={styles.footerCopyright}>
-            © 2024 이쁜우렁이. All rights reserved.
+            © 2026 이쁜우렁이. All rights reserved.
           </p>
         </div>
       </div>

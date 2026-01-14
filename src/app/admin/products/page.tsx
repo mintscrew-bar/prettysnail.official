@@ -384,7 +384,8 @@ export default function ProductsManagement() {
                     value=""
                     onChange={(url) => setDetailImages([...detailImages, url])}
                     onUpload={uploadImage}
-                    placeholder="상세 페이지 이미지를 추가하세요"
+                    placeholder="상세 페이지 이미지를 추가하세요 (고품질 압축 적용)"
+                    highQuality={true}
                   />
                 </div>
               </div>

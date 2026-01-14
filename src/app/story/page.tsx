@@ -52,67 +52,6 @@ export default function StoryPage() {
             </div>
           </section>
 
-          {/* 3-1. 우리의 양식장 */}
-          <section className={styles.farmSection}>
-            <div className={styles.farmIntro}>
-              <h2 className={styles.largeText}>우리의 양식장</h2>
-              <p className={styles.paragraph}>
-                신선함의 시작은 양식장에서 비롯됩니다.
-              </p>
-            </div>
-
-            <div className={styles.farmGrid}>
-              <div className={styles.farmItem}>
-                <div className={styles.farmImageWrapper}>
-                  <img src="/images/story/양식장 사진 1.jpg" alt="청정 환경" />
-                </div>
-                <div className={styles.farmItemText}>
-                  <h3>청정한 환경</h3>
-                  <p>
-                    자연 그대로의 청정 수질에서 우렁이를 양식합니다.
-                    주변 환경의 오염원을 철저히 차단하고,
-                    깨끗한 물만을 사용해 건강한 우렁이를 키웁니다.
-                  </p>
-                </div>
-              </div>
-
-              <div className={styles.farmItem}>
-                <div className={styles.farmImageWrapper}>
-                  <img src="/images/story/양식장 사진 2.jpg" alt="수질 관리" />
-                </div>
-                <div className={styles.farmItemText}>
-                  <h3>체계적인 수질 관리</h3>
-                  <p>
-                    정기적인 수질 검사와 모니터링으로 최적의 양식 환경을 유지합니다.
-                    온도, pH, 용존산소량 등을 철저히 관리하여
-                    우렁이가 스트레스 없이 성장할 수 있도록 합니다.
-                  </p>
-                </div>
-              </div>
-
-              <div className={styles.farmItem}>
-                <div className={styles.farmImageWrapper}>
-                  <img src="/images/story/양식장 사진 3.png" alt="정성스러운 양식" />
-                </div>
-                <div className={styles.farmItemText}>
-                  <h3>정성스러운 양식</h3>
-                  <p>
-                    수십 년간 축적된 양식 노하우와 정성으로
-                    건강하고 품질 좋은 우렁이를 키웁니다.
-                    매일 양식장을 점검하며 최상의 상태를 유지합니다.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.farmClosing}>
-              <p className={styles.paragraph}>
-                우리의 양식장은 최고의 환경에서 최고의 제품을 만들기 위한 약속입니다.
-                자연과 기술이 조화를 이루는 곳에서, 이쁜우렁이의 모든 제품이 탄생합니다.
-              </p>
-            </div>
-          </section>
-
           {/* 4. 공정 과정 */}
           <section className={styles.processSection}>
             <h2 className={styles.processHeading}>우리의 품질 관리</h2>
@@ -147,8 +86,8 @@ export default function StoryPage() {
               <p className={styles.descText}>
                 정기적인 미생물 검사와 중금속 검사를 실시하고,
                 포장 전 육안 검수를 통해 불량품을 걸러냅니다.
-                최종 손질이 완료된 제품은 냉장 배송으로 신선도를 유지하며,
-                출고부터 배송까지 온도를 철저히 관리합니다.
+                최종 손질이 완료된 제품은 자동화 포장 공정을 거친 후 출고부터 배송까지 
+                불필요한 중간 마진을 최소화하여 합리적인 가격으로 고객님께 전달됩니다.
               </p>
             </div>
 
@@ -161,13 +100,14 @@ export default function StoryPage() {
           {/* 5. 결론 */}
           <section className={styles.closingSection}>
             <div className={styles.closingText}>
-              <h2 className={styles.closingTitle}>투명한 신뢰</h2>
+              <h2 className={styles.closingTitle}>답은 언제나 정직함에 있었습니다</h2>
               <p className={styles.closingParagraph}>
-                무엇보다 우리는 생산부터 배송까지 모든 과정을 투명하게 공개합니다.
-                고객님께서 무엇을 드시는지, 어떻게 만들어지는지 모두 알 권리가 있다고 믿기 때문입니다.
+                "어떻게 이 가격에 이런 품질이 가능하죠?"<br />
+                  우리가 가장 기분 좋게 듣는 질문입니다.
               </p>
               <p className={styles.closingParagraph}>
-                이것이 이쁜우렁이가 걸어온 길이고, 앞으로도 걸어갈 길입니다.
+                복잡한 계산 대신 투명한 과정을 택했기에 가능했던 일입니다.<br />
+                이쁜우렁이는 앞으로도 가장 상식적인 답을 식탁 위로 전하겠습니다.
               </p>
             </div>
           </section>
