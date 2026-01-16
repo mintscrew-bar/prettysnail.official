@@ -1,6 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getStoredAuth, verifyPassword, createToken, setAuthCookie, generateCSRFToken, setCSRFCookie } from '@/lib/auth';
-import { checkRateLimit, recordFailedAttempt, clearAttempts, getClientId } from '@/lib/rate-limit';
+import {
+  createToken,
+  generateCSRFToken,
+  getStoredAuth,
+  setAuthCookie,
+  setCSRFCookie,
+  verifyPassword,
+} from "@/lib/auth";
+import {
+  checkRateLimit,
+  clearAttempts,
+  getClientId,
+  recordFailedAttempt,
+} from "@/lib/rate-limit";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { error: '아이디와 비밀번호를 입력해주세요.' },
+        { error: "아이디와 비밀번호를 입력해주세요." },
         { status: 400 }
       );
     }
@@ -70,13 +82,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: '로그인되었습니다.',
+      message: "로그인되었습니다.",
       csrfToken, // 클라이언트에서 헤더에 포함하도록 전달
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     return NextResponse.json(
-      { error: '로그인 처리 중 오류가 발생했습니다.' },
+      { error: "로그인 처리 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }
