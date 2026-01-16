@@ -5,41 +5,34 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import styles from './notice.module.scss';
-import { notices, Notice } from '@/data/notices';
+import { Notice } from '@/data/notices';
 
 export default function NoticePage() {
   const [allNotices, setAllNotices] = useState<Notice[]>([]);
   const [filteredNotices, setFilteredNotices] = useState<Notice[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 10;
 
-  // localStorage에서 공지사항 데이터 로드
+  // API에서 공지사항 데이터 로드
   useEffect(() => {
-    const loadNotices = () => {
-      if (typeof window !== 'undefined') {
-        const savedNotices = localStorage.getItem('admin-notices');
-        if (savedNotices) {
-          const loadedNotices = JSON.parse(savedNotices);
-          setAllNotices(loadedNotices);
-        } else {
-          // localStorage가 비어있으면 정적 데이터로 초기화
-          localStorage.setItem('admin-notices', JSON.stringify(notices));
-          setAllNotices(notices);
+    const fetchNotices = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/notices?all=true');
+        if (response.ok) {
+          const data = await response.json();
+          setAllNotices(data);
         }
+      } catch (error) {
+        console.error('공지사항 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    loadNotices();
-
-    // storage 이벤트 리스너
-    window.addEventListener('storage', loadNotices);
-    window.addEventListener('localStorageUpdated', loadNotices);
-
-    return () => {
-      window.removeEventListener('storage', loadNotices);
-      window.removeEventListener('localStorageUpdated', loadNotices);
-    };
+    fetchNotices();
   }, []);
 
   // 카테고리 필터링 및 정렬
@@ -52,7 +45,7 @@ export default function NoticePage() {
     }
 
     // 날짜순 정렬 (최신순) - 고정 공지는 항상 상단
-    filtered.sort((a, b) => {
+    filtered = [...filtered].sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -118,7 +111,11 @@ export default function NoticePage() {
 
           {/* 공지사항 목록 */}
           <div className={styles.noticeList}>
-            {filteredNotices.length === 0 ? (
+            {isLoading ? (
+              <div className={styles.emptyState}>
+                <p>공지사항을 불러오는 중...</p>
+              </div>
+            ) : filteredNotices.length === 0 ? (
               <div className={styles.emptyState}>
                 <p>등록된 공지사항이 없습니다.</p>
               </div>
@@ -133,12 +130,12 @@ export default function NoticePage() {
                     <div className={styles.badges}>
                       {notice.isPinned && (
                         <span className={styles.badge + ' ' + styles.pinnedBadge}>
-                          📌 고정
+                          고정
                         </span>
                       )}
                       {notice.isImportant && (
                         <span className={styles.badge + ' ' + styles.importantBadge}>
-                          ⭐ 중요
+                          중요
                         </span>
                       )}
                       {notice.category && (

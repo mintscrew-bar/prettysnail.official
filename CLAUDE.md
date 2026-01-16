@@ -103,23 +103,42 @@ The app uses Next.js App Router with the following key routes:
 
 **API Routes:**
 - `/api/upload` - POST endpoint for image uploads (uses Vercel Blob in production, base64 in development)
+- `/api/products` - GET (list/filter), POST (create)
+- `/api/products/[id]` - GET (detail), PUT (update), DELETE
+- `/api/promotions` - GET (list), POST (create)
+- `/api/promotions/[id]` - GET, PUT, DELETE
+- `/api/notices` - GET (list/filter), POST (create)
+- `/api/notices/[id]` - GET, PUT, DELETE (increments view count on GET)
+- `/api/categories` - GET (list), POST (create)
+- `/api/categories/[id]` - GET, PUT, DELETE
+- `/api/auth/login` - POST (admin login with rate limiting)
+- `/api/auth/logout` - POST (admin logout)
+- `/api/auth/change-password` - POST (change admin password with rate limiting)
+- `/api/db/init` - GET (initialize database schema)
 
 ### Data Storage Pattern
 
-**Two-tier storage strategy:**
+**Multi-tier storage strategy (in transition):**
 
 1. **Static data** (`src/data/*.ts`): TypeScript files with interfaces and arrays
-   - Used for initial data seeding
+   - Used for initial data seeding and fallback
    - Committed to git
-   - Comments indicate these should be replaced with CMS/API
+   - Being phased out in favor of database
 
-2. **Runtime data** (`localStorage` via `useLocalStorage` hook):
-   - Products and promotions can be created/edited/deleted via admin panel
-   - Changes are persisted to localStorage
-   - SSR-safe: checks `typeof window !== 'undefined'`
-   - Initial load merges static data with localStorage data
+2. **Database** (Vercel Postgres):
+   - Primary data source for products, promotions, notices, categories
+   - API routes in `src/app/api/` handle CRUD operations
+   - Schema managed via `src/lib/db.ts`
+   - Database functions: `getAllProducts()`, `getProducts()`, `createProduct()`, etc.
+   - Pagination support with `PaginationParams` (page, limit)
+   - Filtering support with `ProductFilter` (category, isNew, isBestSeller, search)
 
-**Key insight:** The app loads static data from TypeScript files, then overlays localStorage changes. Admin edits are stored in localStorage only, not in the TypeScript files.
+3. **localStorage** (client-side cache/fallback):
+   - Admin panel may use localStorage for temporary data
+   - SSR-safe via `useLocalStorage` hook
+   - Legacy pattern being replaced by database
+
+**Current pattern:** API routes query Vercel Postgres. Frontend components fetch from API routes. Admin changes persist to database via API calls.
 
 ### Homepage Component Structure
 
@@ -160,12 +179,12 @@ useEffect(() => {
 ```
 
 **Data management in admin:**
-- Uses `useLocalStorage` hook for CRUD operations
-- Products: array with id, name, category, price, image, description
-- Promotions: array with id, title, description, image, discount, period, link
-- Notices: array with id, title, content, date, isPinned, isImportant, category, views
-- Changes persist to localStorage immediately
-- localStorage keys: `admin-products`, `admin-promotions`, `admin-notices`
+- Uses API routes for CRUD operations (POST, PUT, DELETE)
+- Products: id, name, category, price, originalPrice, thumbnail, detailImages[], description, tags[], isNew, isBestSeller, stores{}
+- Promotions: id, title, description, image, discount, period, link
+- Notices: id, title, content, date, isPinned, isImportant, category, views
+- All changes persist to Vercel Postgres database
+- Admin panels use `useImageUpload` hook for image handling
 
 ### Animation System (GSAP)
 
@@ -198,13 +217,26 @@ useEffect(() => {
 
 2. **Development (local)**: Falls back to base64 encoding
    - Converts file to base64 data URL
-   - Returns data URL for localStorage storage
+   - Returns data URL for temporary use
    - Console warning indicates development mode
 
-**Validation:**
-- File size limit: 10MB
+**Client-side compression** (`src/utils/imageCompression.ts`):
+- Uses Canvas API for resizing and quality adjustment
+- **Thumbnail images**: Compressed to 1600x1600px at 88% quality (files > 1MB)
+- **Detail images**: NO compression - uploaded at original quality (via `highQuality=true` prop)
+- Compression logic in `ImageUpload` component (`src/components/admin/ImageUpload.tsx`)
+
+**Validation & Rate Limiting:**
+- File size limit: 10MB (production), 5MB (development)
 - File type: images only (`image/*`)
+- Rate limit: 20 uploads per 30 minutes (via `src/lib/rate-limit.ts`)
 - Error handling returns appropriate HTTP status codes
+
+**Usage via hook:**
+```typescript
+const { uploadImage, uploading, error } = useImageUpload();
+const url = await uploadImage(file);
+```
 
 ### Styling System
 
@@ -313,39 +345,75 @@ See `DEPLOYMENT.md` for detailed instructions. Key steps:
 4. Push to main branch triggers automatic deployment
 
 ### Local Development
-- No environment variables required
-- Image uploads use base64 fallback
-- localStorage persists across browser sessions
-- Auth state cleared on browser close (sessionStorage would be better)
+- **Required for production features:**
+  - `BLOB_READ_WRITE_TOKEN` - Vercel Blob Storage (auto-set by Vercel)
+  - `POSTGRES_URL` - Vercel Postgres connection string (auto-set by Vercel)
+  - `KV_REST_API_URL` / `KV_REST_API_TOKEN` - Vercel KV for rate limiting (optional, falls back to memory)
+- **Development mode:**
+  - Image uploads use base64 fallback when `BLOB_READ_WRITE_TOKEN` not set
+  - Rate limiting uses in-memory Map when KV not available
+  - Database operations may fail without Postgres connection
+
+### Rate Limiting System
+
+**Implementation:** `src/lib/rate-limit.ts`
+
+**Storage:**
+- Production: Vercel KV (Redis)
+- Development: In-memory Map fallback
+
+**Rate limits by API:**
+- `login`: 5 attempts per hour, 15min block
+- `upload`: 20 uploads per 30min, 5min block
+- `change-password`: 3 attempts per hour, 30min block
+- `create-content`: 20 creations per 30min, 10min block
+
+**Functions:**
+- `checkRateLimit(clientId, apiType)`: Check if action is allowed
+- `recordFailedAttempt(clientId, apiType)`: Increment failure count
+- `clearAttempts(clientId, apiType)`: Reset on success
+- `getClientId(request)`: Extract client IP from headers
 
 ## Known Limitations & TODOs
 
 **Security:**
-- Admin authentication is client-side only (localStorage)
-- Credentials are hardcoded in source code
-- No CSRF protection
-- No rate limiting on upload endpoint
+- Admin authentication is client-side only (localStorage) - consider JWT tokens
+- Credentials are hardcoded in source code - move to environment variables
+- No CSRF protection - consider implementing CSRF tokens
+- Rate limiting relies on client IP (can be bypassed with VPN/proxies)
 
 **Data Persistence:**
-- localStorage is browser-specific and not shared across devices
-- No database or CMS integration
-- Admin changes don't sync to git repository
-- Data loss risk if localStorage is cleared
+- Database migration in progress - some components may still use localStorage
+- Legacy `src/data/*.ts` files should be phased out
 
 **Features:**
 - Mobile menu button exists but drawer/menu not implemented
 - Some promotion/product links point to `#` placeholders
 - Contact information uses placeholder values
 - Store links (Naver, Coupang) are not fully connected
-- No search functionality for products
+- No search functionality for products on main page
 - No shopping cart (redirects to external stores)
 
 **Performance:**
-- Large base64 images in localStorage can slow down admin panel
-- No image optimization/compression before upload
 - GSAP animations can be heavy on low-end devices
+- Consider lazy loading for non-critical sections
+- Product detail images not optimized (deliberate choice to preserve quality)
 
 ## Recent Development History
+
+### 2026-01-16: Image Compression Optimization
+
+**Problem:** Product detail images suffering from severe quality degradation due to aggressive compression.
+
+**Solution:** Removed compression for detail images while maintaining compression for thumbnails.
+
+**Changes:**
+- `src/components/admin/ImageUpload.tsx:36-44` - Modified to skip compression when `highQuality=true`
+- Detail images now upload at original quality (no resize, no quality loss)
+- Thumbnail images still compressed to 1600x1600px at 88% quality
+- Updated placeholder text to indicate "원본 화질 유지" (original quality preserved)
+
+**Rationale:** Product detail pages require high image quality for customer decision-making. Thumbnails can be compressed for faster loading.
 
 ### 2026-01-06: Support Page Redesign & Admin Unification
 

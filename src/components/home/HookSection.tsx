@@ -3,47 +3,34 @@
 import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import styles from '@/app/page.module.scss';
-import { promotions } from '@/data/promotions';
+import { PromotionCard } from '@/data/promotions';
 
 export default function HookSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
 
   const [isVisible, setIsVisible] = useState(false);
-  const [allPromotions, setAllPromotions] = useState(promotions);
+  const [allPromotions, setAllPromotions] = useState<PromotionCard[]>([]);
 
-  // localStorage에서 프로모션 데이터 로드 및 초기화
+  // API에서 프로모션 데이터 로드
   useEffect(() => {
-    const loadPromotions = () => {
-      if (typeof window !== 'undefined') {
-        const savedPromotions = localStorage.getItem('admin-promotions');
-        if (savedPromotions) {
-          const loadedPromotions = JSON.parse(savedPromotions);
-          setAllPromotions(loadedPromotions);
-        } else {
-          // localStorage가 비어있으면 정적 데이터로 초기화
-          localStorage.setItem('admin-promotions', JSON.stringify(promotions));
-          setAllPromotions(promotions);
+    const fetchPromotions = async () => {
+      try {
+        const response = await fetch('/api/promotions?all=true');
+        if (response.ok) {
+          const data = await response.json();
+          setAllPromotions(data);
         }
+      } catch (error) {
+        console.error('프로모션 로드 실패:', error);
       }
     };
 
-    loadPromotions();
-
-    // storage 이벤트 리스너 (다른 탭에서 변경 시 감지)
-    window.addEventListener('storage', loadPromotions);
-
-    // 같은 탭에서의 변경을 감지하기 위한 커스텀 이벤트
-    const handleStorageChange = () => loadPromotions();
-    window.addEventListener('localStorageUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', loadPromotions);
-      window.removeEventListener('localStorageUpdated', handleStorageChange);
-    };
+    fetchPromotions();
   }, []);
 
   useEffect(() => {
+    const currentRef = sectionRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -59,13 +46,13 @@ export default function HookSection() {
       }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);

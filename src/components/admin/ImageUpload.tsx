@@ -30,18 +30,17 @@ export default function ImageUpload({
     if (!file) return;
 
     try {
-      // 이미지 압축 (1MB 이상일 경우)
+      // 이미지 압축
       let fileToUpload = file;
-      if (file.size > 1 * 1024 * 1024) {
-        console.log('이미지 압축 시작...');
 
-        if (highQuality) {
-          // 상세 이미지: 더 크고 높은 품질
-          fileToUpload = await compressImage(file, 3000, 3000, 0.92);
-        } else {
-          // 썸네일: 적당한 크기와 품질
-          fileToUpload = await compressImage(file, 1600, 1600, 0.88);
-        }
+      if (highQuality) {
+        // 상세 이미지: 압축하지 않고 원본 그대로 업로드
+        console.log('상세 이미지 원본 업로드:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+        fileToUpload = file;
+      } else if (file.size > 1 * 1024 * 1024) {
+        // 썸네일: 1MB 이상일 경우 압축
+        console.log('썸네일 압축 시작...');
+        fileToUpload = await compressImage(file, 1600, 1600, 0.88);
       }
 
       const url = await onUpload(fileToUpload);

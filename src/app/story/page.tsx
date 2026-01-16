@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import styles from './story.module.scss';
@@ -102,7 +103,7 @@ export default function StoryPage() {
             <div className={styles.closingText}>
               <h2 className={styles.closingTitle}>답은 언제나 정직함에 있었습니다</h2>
               <p className={styles.closingParagraph}>
-                "어떻게 이 가격에 이런 품질이 가능하죠?"<br />
+                &ldquo;어떻게 이 가격에 이런 품질이 가능하죠?&rdquo;<br />
                   우리가 가장 기분 좋게 듣는 질문입니다.
               </p>
               <p className={styles.closingParagraph}>
@@ -116,7 +117,7 @@ export default function StoryPage() {
           <section className={styles.ctaSection}>
             <h2>이쁜우렁이와 함께하세요</h2>
             <p>건강하고 맛있는 우렁이 제품을 합리적인 가격으로 경험해보세요</p>
-            <a href="/products" className={styles.ctaButton}>제품 둘러보기</a>
+            <Link href="/products" className={styles.ctaButton}>제품 둘러보기</Link>
           </section>
         </div>
       </div>

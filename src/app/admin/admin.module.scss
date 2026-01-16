@@ -741,6 +741,13 @@
   font-size: var(--font-size-lg);
 }
 
+.loadingState {
+  padding: var(--spacing-2xl);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
 // 프로모션 그리드
 .promoGrid {
   display: grid;

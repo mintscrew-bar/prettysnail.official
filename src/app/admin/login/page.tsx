@@ -5,6 +5,24 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.scss';
 
+// localStorage에서 초기값 로드 헬퍼
+function getInitialLoginAttempts(): number {
+  if (typeof window === 'undefined') return 0;
+  return parseInt(localStorage.getItem('login-attempts') || '0');
+}
+
+function getInitialBlockedUntil(): number | null {
+  if (typeof window === 'undefined') return null;
+  const blocked = parseInt(localStorage.getItem('login-blocked-until') || '0');
+  if (blocked > Date.now()) {
+    return blocked;
+  }
+  // 차단 시간이 지났으면 초기화
+  localStorage.removeItem('login-attempts');
+  localStorage.removeItem('login-blocked-until');
+  return null;
+}
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -13,28 +31,9 @@ export default function AdminLoginPage() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+  const [loginAttempts, setLoginAttempts] = useState(getInitialLoginAttempts);
+  const [blockedUntil, setBlockedUntil] = useState<number | null>(getInitialBlockedUntil);
   const [remainingTime, setRemainingTime] = useState(0);
-
-  // 로그인 시도 횟수 및 차단 상태 복구
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // 로그인 시도 횟수 및 차단 상태 복구
-      const attempts = parseInt(localStorage.getItem('login-attempts') || '0');
-      const blocked = parseInt(localStorage.getItem('login-blocked-until') || '0');
-
-      setLoginAttempts(attempts);
-
-      if (blocked > Date.now()) {
-        setBlockedUntil(blocked);
-      } else {
-        // 차단 시간이 지났으면 초기화
-        localStorage.removeItem('login-attempts');
-        localStorage.removeItem('login-blocked-until');
-      }
-    }
-  }, []);
 
   // 차단 시간 카운트다운
   useEffect(() => {
@@ -187,9 +186,9 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               className={styles.loginBtn}
-              disabled={isLoading || (blockedUntil !== null && blockedUntil > Date.now())}
+              disabled={isLoading || remainingTime > 0}
             >
-              {isLoading ? '로그인 중...' : blockedUntil && blockedUntil > Date.now() ? `차단됨 (${Math.ceil(remainingTime / 60000)}분)` : '로그인'}
+              {isLoading ? '로그인 중...' : remainingTime > 0 ? `차단됨 (${Math.ceil(remainingTime / 60000)}분)` : '로그인'}
             </button>
           </form>
 

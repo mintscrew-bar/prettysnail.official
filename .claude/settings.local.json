@@ -7,7 +7,14 @@
       "Bash(npm run build:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(dir /B \"C:\\\\Users\\\\Harumaroon\\\\OneDrive - 대구대학교\\\\바탕 화면\\\\브랜드용\\\\Brand\\\\prettysnail\\\\src\\\\app\\\\api\")",
+      "Bash(npm run lint)",
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(dir:*)"
     ]
   }
 }

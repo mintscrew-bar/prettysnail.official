@@ -4,54 +4,45 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { Notice } from "@/data/notices";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import styles from "./detail.module.scss";
 
 export default function NoticeDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const noticeId = params.id as string;
 
   const [notice, setNotice] = useState<Notice | null>(null);
   const [allNotices, setAllNotices] = useState<Notice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedNotices = localStorage.getItem("admin-notices");
-      if (savedNotices) {
-        const notices: Notice[] = JSON.parse(savedNotices);
-        setAllNotices(notices);
+    const fetchNotice = async () => {
+      try {
+        setIsLoading(true);
 
-        const currentNotice = notices.find((n) => n.id === noticeId);
-        if (currentNotice) {
-          setNotice(currentNotice);
-
-          // 세션 내 중복 조회 방지
-          const viewedKey = `notice-viewed-${noticeId}`;
-          const hasViewed = sessionStorage.getItem(viewedKey);
-
-          if (!hasViewed) {
-            // 조회수 증가 (처음 조회하는 경우만)
-            const updatedNotices = notices.map((n) =>
-              n.id === noticeId ? { ...n, views: (n.views || 0) + 1 } : n
-            );
-
-            // 저장 및 로컬 상태 갱신
-            localStorage.setItem("admin-notices", JSON.stringify(updatedNotices));
-            const updatedNotice =
-              updatedNotices.find((n) => n.id === noticeId) || null;
-            setAllNotices(updatedNotices);
-            setNotice(updatedNotice);
-
-            // 세션에 조회 기록 저장
-            sessionStorage.setItem(viewedKey, "true");
-
-            // 같은 탭에서 변경사항을 반영하기 위한 커스텀 이벤트
-            window.dispatchEvent(new Event("localStorageUpdated"));
-          }
+        // 공지사항 상세 정보 로드 (조회수 자동 증가)
+        const response = await fetch(`/api/notices/${noticeId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setNotice(data);
         }
+
+        // 전체 공지사항 로드 (이전/다음 네비게이션용)
+        const allResponse = await fetch('/api/notices?all=true');
+        if (allResponse.ok) {
+          const allData = await allResponse.json();
+          setAllNotices(allData);
+        }
+      } catch (error) {
+        console.error('공지사항 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    if (noticeId) {
+      fetchNotice();
     }
   }, [noticeId]);
 
@@ -70,6 +61,20 @@ export default function NoticeDetailPage() {
   const prevNotice = currentIndex > 0 ? allNotices[currentIndex - 1] : null;
   const nextNotice =
     currentIndex < allNotices.length - 1 ? allNotices[currentIndex + 1] : null;
+
+  if (isLoading) {
+    return (
+      <>
+        <Header />
+        <div className={styles.container}>
+          <div className={styles.loading}>
+            <p>공지사항을 불러오는 중...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   if (!notice) {
     return (
@@ -105,12 +110,12 @@ export default function NoticeDetailPage() {
             <div className={styles.badges}>
               {notice.isPinned && (
                 <span className={styles.badge + " " + styles.pinnedBadge}>
-                  📌 고정
+                  고정
                 </span>
               )}
               {notice.isImportant && (
                 <span className={styles.badge + " " + styles.importantBadge}>
-                  ⭐ 중요
+                  중요
                 </span>
               )}
               {notice.category && (

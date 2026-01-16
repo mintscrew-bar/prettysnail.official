@@ -1,81 +1,46 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '@/app/page.module.scss';
-import { products, categories as initialCategories } from '@/data/products';
+import { Product, categories as initialCategories } from '@/data/products';
 
 export default function ProductShowcase() {
   const sectionRef = useRef<HTMLElement>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [allProducts, setAllProducts] = useState(products);
-  const [filteredProducts, setFilteredProducts] = useState(products);
-  const [categories, setCategories] = useState(initialCategories);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [categories] = useState(initialCategories);
   const [isVisible, setIsVisible] = useState(false);
   const [animateFilter, setAnimateFilter] = useState(false);
 
-  // localStorage에서 제품 데이터 로드 및 초기화
+  // API에서 제품 데이터 로드
   useEffect(() => {
-    const loadProducts = () => {
-      if (typeof window !== 'undefined') {
-        const savedProducts = localStorage.getItem('admin-products');
-        if (savedProducts) {
-          const loadedProducts = JSON.parse(savedProducts);
-          setAllProducts(loadedProducts);
-        } else {
-          // localStorage가 비어있으면 정적 데이터로 초기화
-          localStorage.setItem('admin-products', JSON.stringify(products));
-          setAllProducts(products);
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products?all=true');
+        if (response.ok) {
+          const data = await response.json();
+          setAllProducts(data);
         }
+      } catch (error) {
+        console.error('제품 로드 실패:', error);
       }
     };
 
-    const loadCategories = () => {
-      if (typeof window !== 'undefined') {
-        const savedCategories = localStorage.getItem('admin-categories');
-        if (savedCategories) {
-          setCategories(JSON.parse(savedCategories));
-        } else {
-          // localStorage가 비어있으면 정적 데이터로 초기화
-          localStorage.setItem('admin-categories', JSON.stringify(initialCategories));
-          setCategories(initialCategories);
-        }
-      }
-    };
-
-    loadProducts();
-    loadCategories();
-
-    // storage 이벤트 리스너 (다른 탭에서 변경 시 감지)
-    const handleStorage = () => {
-      loadProducts();
-      loadCategories();
-    };
-    window.addEventListener('storage', handleStorage);
-
-    // 같은 탭에서의 변경을 감지하기 위한 커스텀 이벤트
-    const handleStorageChange = () => {
-      loadProducts();
-      loadCategories();
-    };
-    window.addEventListener('localStorageUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('localStorageUpdated', handleStorageChange);
-    };
+    fetchProducts();
   }, []);
 
-  useEffect(() => {
+  // useMemo를 사용하여 파생 상태 계산 (React 권장 패턴)
+  const filteredProducts = useMemo(() => {
     if (selectedCategory === 'all') {
-      setFilteredProducts(allProducts);
-    } else {
-      setFilteredProducts(allProducts.filter((p) => p.category === selectedCategory));
+      return allProducts;
     }
+    return allProducts.filter((p) => p.category === selectedCategory);
   }, [selectedCategory, allProducts]);
 
   useEffect(() => {
+    const currentRef = sectionRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -91,13 +56,13 @@ export default function ProductShowcase() {
       }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);

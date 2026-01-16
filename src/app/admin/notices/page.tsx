@@ -1,27 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { notices as initialNotices, Notice } from '@/data/notices';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { Notice } from '@/data/notices';
 import Modal from '@/components/admin/Modal';
 import styles from '../admin.module.scss';
 
 export default function NoticesManagement() {
-  const router = useRouter();
-  const [notices, setNotices] = useLocalStorage<Notice[]>('admin-notices', initialNotices);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // 인증 확인
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('admin-logged-in');
-    if (isLoggedIn !== 'true') {
-      router.push('/admin/login');
-    }
-  }, [router]);
+  // 인증은 middleware에서 처리됨 (JWT 쿠키 검증)
 
   const [formData, setFormData] = useState<Partial<Notice>>({
     title: '',
@@ -32,6 +25,26 @@ export default function NoticesManagement() {
     category: '공지',
     views: 0,
   });
+
+  // API에서 공지사항 로드
+  useEffect(() => {
+    fetchNotices();
+  }, []);
+
+  const fetchNotices = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/notices?all=true');
+      if (response.ok) {
+        const data = await response.json();
+        setNotices(data);
+      }
+    } catch (error) {
+      console.error('공지사항 로드 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 필터링된 공지사항 목록
   const filteredNotices = notices.filter((notice) => {
@@ -74,7 +87,7 @@ export default function NoticesManagement() {
   };
 
   // 공지사항 저장
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.title || !formData.content) {
@@ -82,37 +95,65 @@ export default function NoticesManagement() {
       return;
     }
 
-    if (editingNotice) {
-      // 수정
-      const updatedNotices = notices.map((notice) =>
-        notice.id === editingNotice.id
-          ? { ...notice, ...formData }
-          : notice
-      );
-      setNotices(updatedNotices);
-    } else {
-      // 추가
-      const newNotice: Notice = {
-        id: `notice-${Date.now()}`,
-        title: formData.title!,
-        content: formData.content!,
-        date: formData.date!,
-        isPinned: formData.isPinned || false,
-        isImportant: formData.isImportant || false,
-        category: formData.category || '공지',
-        views: 0,
-      };
-      setNotices([...notices, newNotice]);
-    }
+    try {
+      setIsSaving(true);
 
-    closeModal();
+      if (editingNotice) {
+        // 수정
+        const response = await fetch(`/api/notices/${editingNotice.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          const updatedNotice = await response.json();
+          setNotices(notices.map((n) => (n.id === editingNotice.id ? updatedNotice : n)));
+          closeModal();
+        } else {
+          throw new Error('수정 실패');
+        }
+      } else {
+        // 추가
+        const response = await fetch('/api/notices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          const newNotice = await response.json();
+          setNotices([newNotice, ...notices]);
+          closeModal();
+        } else {
+          throw new Error('추가 실패');
+        }
+      }
+    } catch (error) {
+      console.error('공지사항 저장 실패:', error);
+      alert('공지사항 저장에 실패했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // 공지사항 삭제
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('정말 삭제하시겠습니까?')) {
-      const updatedNotices = notices.filter((notice) => notice.id !== id);
-      setNotices(updatedNotices);
+      try {
+        const response = await fetch(`/api/notices/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setNotices(notices.filter((n) => n.id !== id));
+        } else {
+          throw new Error('삭제 실패');
+        }
+      } catch (error) {
+        console.error('공지사항 삭제 실패:', error);
+        alert('공지사항 삭제에 실패했습니다.');
+      }
     }
   };
 
@@ -121,6 +162,14 @@ export default function NoticesManagement() {
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR');
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.managementPage}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.managementPage}>
@@ -131,7 +180,7 @@ export default function NoticesManagement() {
           <p className={styles.pageDesc}>공지사항을 추가, 수정, 삭제할 수 있어요</p>
         </div>
         <button className={styles.primaryBtn} onClick={() => openModal()}>
-          ➕ 새 공지사항 추가
+          + 새 공지사항 추가
         </button>
       </div>
 
@@ -197,8 +246,8 @@ export default function NoticesManagement() {
                   </td>
                   <td>{formatDate(notice.date)}</td>
                   <td>{notice.views || 0}</td>
-                  <td>{notice.isPinned ? '✅' : '-'}</td>
-                  <td>{notice.isImportant ? '⭐' : '-'}</td>
+                  <td>{notice.isPinned ? 'O' : '-'}</td>
+                  <td>{notice.isImportant ? 'O' : '-'}</td>
                   <td>
                     <div className={styles.actionBtns}>
                       <button
@@ -311,8 +360,8 @@ export default function NoticesManagement() {
             <button type="button" onClick={closeModal} className={styles.cancelBtn}>
               취소
             </button>
-            <button type="submit" className={styles.saveBtn}>
-              {editingNotice ? '수정' : '추가'}
+            <button type="submit" className={styles.saveBtn} disabled={isSaving}>
+              {isSaving ? '저장 중...' : editingNotice ? '수정' : '추가'}
             </button>
           </div>
         </form>

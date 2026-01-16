@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './admin.module.scss';
@@ -13,12 +13,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // 로딩 상태 해제
-  useEffect(() => {
-    setIsLoading(false);
-  }, []);
+  const [isLoading] = useState(false);
 
   // 로그아웃 핸들러
   const handleLogout = async () => {

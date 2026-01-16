@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Helper scripts that use require() for Node.js compatibility
+    "scripts/**",
+    "generate-env-values.js",
   ]),
 ]);
 

@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { categories as initialCategories } from '@/data/products';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import styles from '../admin.module.scss';
 
 interface Category {
@@ -11,13 +9,32 @@ interface Category {
 }
 
 export default function CategoriesManagement() {
-  const [categories, setCategories] = useLocalStorage<Category[]>(
-    'admin-categories',
-    initialCategories
-  );
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ id: '', name: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // API에서 카테고리 로드
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('카테고리 로드 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 모달 열기
   const openModal = (category?: Category) => {
@@ -39,82 +56,104 @@ export default function CategoriesManagement() {
   };
 
   // 카테고리 저장
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       alert('카테고리 이름을 입력해주세요.');
       return;
     }
 
-    // ID는 이름에서 자동 생성 (편집 시는 기존 ID 유지)
-    const categoryId = editingCategory ? editingCategory.id : formData.name;
+    try {
+      setIsSaving(true);
 
-    // 중복 확인 (편집 시 자기 자신 제외)
-    const isDuplicate = categories.some(
-      (cat) => cat.id === categoryId && cat.id !== editingCategory?.id
-    );
+      if (editingCategory) {
+        // 수정
+        const response = await fetch(`/api/categories/${editingCategory.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: formData.name.trim() }),
+        });
 
-    if (isDuplicate) {
-      alert('이미 존재하는 카테고리입니다.');
-      return;
+        if (response.ok) {
+          const updatedCategory = await response.json();
+          setCategories(
+            categories.map((cat) =>
+              cat.id === editingCategory.id ? updatedCategory : cat
+            )
+          );
+          closeModal();
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || '수정 실패');
+        }
+      } else {
+        // 추가
+        const categoryId = formData.name.trim();
+        const response = await fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: categoryId,
+            name: formData.name.trim(),
+          }),
+        });
+
+        if (response.ok) {
+          const newCategory = await response.json();
+          setCategories([...categories, newCategory]);
+          closeModal();
+        } else {
+          const error = await response.json();
+          if (response.status === 409) {
+            alert('이미 존재하는 카테고리입니다.');
+          } else {
+            throw new Error(error.error || '추가 실패');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('카테고리 저장 실패:', error);
+      alert(error instanceof Error ? error.message : '카테고리 저장에 실패했습니다.');
+    } finally {
+      setIsSaving(false);
     }
-
-    if (editingCategory) {
-      // 수정
-      setCategories(
-        categories.map((cat) =>
-          cat.id === editingCategory.id ? { id: categoryId, name: formData.name } : cat
-        )
-      );
-    } else {
-      // 추가
-      const newCategory: Category = {
-        id: categoryId,
-        name: formData.name,
-      };
-      setCategories([...categories, newCategory]);
-    }
-
-    closeModal();
   };
 
   // 카테고리 삭제
-  const handleDelete = (category: Category) => {
+  const handleDelete = async (category: Category) => {
     // 'all' 카테고리는 삭제 불가
     if (category.id === 'all') {
       alert('"전체" 카테고리는 삭제할 수 없습니다.');
       return;
     }
 
-    // 해당 카테고리를 사용하는 제품이 있는지 확인
-    const savedProducts = localStorage.getItem('admin-products');
-    if (savedProducts) {
-      const products = JSON.parse(savedProducts);
-      const hasProducts = products.some((p: any) => p.category === category.id);
-
-      if (hasProducts) {
-        if (
-          !confirm(
-            `이 카테고리를 사용하는 제품이 있습니다. 정말 삭제하시겠습니까?\n(제품의 카테고리는 "기타"로 변경됩니다)`
-          )
-        ) {
-          return;
-        }
-
-        // 해당 카테고리의 제품들을 "기타"로 변경
-        const updatedProducts = products.map((p: any) =>
-          p.category === category.id ? { ...p, category: '기타' } : p
-        );
-        localStorage.setItem('admin-products', JSON.stringify(updatedProducts));
-        window.dispatchEvent(new Event('localStorageUpdated'));
-      } else {
-        if (!confirm(`"${category.name}" 카테고리를 삭제하시겠습니까?`)) {
-          return;
-        }
-      }
+    if (!confirm(`"${category.name}" 카테고리를 삭제하시겠습니까?`)) {
+      return;
     }
 
-    setCategories(categories.filter((cat) => cat.id !== category.id));
+    try {
+      const response = await fetch(`/api/categories/${category.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setCategories(categories.filter((cat) => cat.id !== category.id));
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || '삭제 실패');
+      }
+    } catch (error) {
+      console.error('카테고리 삭제 실패:', error);
+      alert(error instanceof Error ? error.message : '카테고리 삭제에 실패했습니다.');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.managementPage}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.managementPage}>
@@ -125,7 +164,7 @@ export default function CategoriesManagement() {
           <p className={styles.pageDesc}>제품 카테고리를 관리할 수 있어요</p>
         </div>
         <button className={styles.primaryBtn} onClick={() => openModal()}>
-          ➕ 새 카테고리 추가
+          + 새 카테고리 추가
         </button>
       </div>
 
@@ -201,8 +240,8 @@ export default function CategoriesManagement() {
               <button className={styles.cancelBtn} onClick={closeModal}>
                 취소
               </button>
-              <button className={styles.saveBtn} onClick={handleSave}>
-                {editingCategory ? '수정' : '추가'}
+              <button className={styles.saveBtn} onClick={handleSave} disabled={isSaving}>
+                {isSaving ? '저장 중...' : editingCategory ? '수정' : '추가'}
               </button>
             </div>
           </div>

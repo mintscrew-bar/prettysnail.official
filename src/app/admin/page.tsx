@@ -4,54 +4,47 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './admin.module.scss';
 
+interface Stat {
+  label: string;
+  value: string;
+  icon: string;
+  href: string;
+}
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState([
-    { label: '전체 제품', value: '0', icon: '📦', href: '/admin/products' },
-    { label: '활성 프로모션', value: '0', icon: '🎉', href: '/admin/promotions' },
-    { label: '공지사항', value: '0', icon: '📢', href: '/admin/notices' },
-    { label: '카테고리', value: '0', icon: '📁', href: '/admin/categories' },
+  const [stats, setStats] = useState<Stat[]>([
+    { label: '전체 제품', value: '-', icon: '📦', href: '/admin/products' },
+    { label: '활성 프로모션', value: '-', icon: '🎉', href: '/admin/promotions' },
+    { label: '공지사항', value: '-', icon: '📢', href: '/admin/notices' },
+    { label: '카테고리', value: '-', icon: '📁', href: '/admin/categories' },
   ]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // localStorage에서 실제 데이터 로드 및 통계 계산
+  // API에서 통계 데이터 로드
   useEffect(() => {
-    const loadStats = () => {
-      if (typeof window !== 'undefined') {
-        // 제품 개수
-        const savedProducts = localStorage.getItem('admin-products');
-        const productsCount = savedProducts ? JSON.parse(savedProducts).length : 0;
-
-        // 프로모션 개수
-        const savedPromotions = localStorage.getItem('admin-promotions');
-        const promotionsCount = savedPromotions ? JSON.parse(savedPromotions).length : 0;
-
-        // 공지사항 개수
-        const savedNotices = localStorage.getItem('admin-notices');
-        const noticesCount = savedNotices ? JSON.parse(savedNotices).length : 0;
-
-        // 카테고리 개수 ('all' 제외)
-        const savedCategories = localStorage.getItem('admin-categories');
-        const categoriesCount = savedCategories
-          ? JSON.parse(savedCategories).filter((cat: any) => cat.id !== 'all').length
-          : 0;
-
-        setStats([
-          { label: '전체 제품', value: productsCount.toString(), icon: '📦', href: '/admin/products' },
-          { label: '활성 프로모션', value: promotionsCount.toString(), icon: '🎉', href: '/admin/promotions' },
-          { label: '공지사항', value: noticesCount.toString(), icon: '📢', href: '/admin/notices' },
-          { label: '카테고리', value: categoriesCount.toString(), icon: '📁', href: '/admin/categories' },
-        ]);
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/db/init');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.stats) {
+            setStats([
+              { label: '전체 제품', value: data.stats.products.toString(), icon: '📦', href: '/admin/products' },
+              { label: '활성 프로모션', value: data.stats.promotions.toString(), icon: '🎉', href: '/admin/promotions' },
+              { label: '공지사항', value: data.stats.notices.toString(), icon: '📢', href: '/admin/notices' },
+              { label: '카테고리', value: (data.stats.categories - 1).toString(), icon: '📁', href: '/admin/categories' }, // 'all' 제외
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error('통계 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    loadStats();
-
-    // 같은 탭에서의 변경을 감지하기 위한 커스텀 이벤트
-    const handleStorageChange = () => loadStats();
-    window.addEventListener('localStorageUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('localStorageUpdated', handleStorageChange);
-    };
+    fetchStats();
   }, []);
 
   return (
@@ -69,7 +62,9 @@ export default function AdminDashboard() {
           <Link key={index} href={stat.href} className={styles.statCard}>
             <div className={styles.statIcon}>{stat.icon}</div>
             <div className={styles.statInfo}>
-              <div className={styles.statValue}>{stat.value}</div>
+              <div className={styles.statValue}>
+                {isLoading ? '...' : stat.value}
+              </div>
               <div className={styles.statLabel}>{stat.label}</div>
             </div>
           </Link>

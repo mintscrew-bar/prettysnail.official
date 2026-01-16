@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import styles from './Header.module.scss';
 
 export default function Header() {
@@ -56,23 +57,23 @@ export default function Header() {
         ref={headerRef}
         className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}
       >
-        <a href="/" className={styles.logo}>
+        <Link href="/" className={styles.logo}>
           <img src="/logo/Asset 2.png" alt="" className={styles.logoImage} />
           <span className={styles.logoText}>이쁜우렁이</span>
-        </a>
+        </Link>
         <nav className={styles.nav}>
-          <a href="/products" className={styles.navLink}>
+          <Link href="/products" className={styles.navLink}>
             제품
-          </a>
-          <a href="/story" className={styles.navLink}>
+          </Link>
+          <Link href="/story" className={styles.navLink}>
             스토리
-          </a>
-          <a href="/notice" className={styles.navLink}>
+          </Link>
+          <Link href="/notice" className={styles.navLink}>
             공지사항
-          </a>
-          <a href="/support" className={styles.navLink}>
+          </Link>
+          <Link href="/support" className={styles.navLink}>
             고객지원
-          </a>
+          </Link>
         </nav>
         <button
           className={`${styles.mobileMenuBtn} ${isMobileMenuOpen ? styles.open : ''}`}
@@ -92,38 +93,38 @@ export default function Header() {
         aria-hidden={!isMobileMenuOpen}
       >
         <nav className={styles.mobileNav}>
-          <a
+          <Link
             href="/products"
             className={styles.mobileNavLink}
             onClick={closeMobileMenu}
             tabIndex={isMobileMenuOpen ? 0 : -1}
           >
             제품
-          </a>
-          <a
+          </Link>
+          <Link
             href="/story"
             className={styles.mobileNavLink}
             onClick={closeMobileMenu}
             tabIndex={isMobileMenuOpen ? 0 : -1}
           >
             스토리
-          </a>
-          <a
+          </Link>
+          <Link
             href="/notice"
             className={styles.mobileNavLink}
             onClick={closeMobileMenu}
             tabIndex={isMobileMenuOpen ? 0 : -1}
           >
             공지사항
-          </a>
-          <a
+          </Link>
+          <Link
             href="/support"
             className={styles.mobileNavLink}
             onClick={closeMobileMenu}
             tabIndex={isMobileMenuOpen ? 0 : -1}
           >
             고객지원
-          </a>
+          </Link>
         </nav>
       </div>
 

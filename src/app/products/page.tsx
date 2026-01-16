@@ -3,69 +3,39 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Product, categories as initialCategories, products as initialProducts } from '@/data/products';
+import { Product, categories as initialCategories } from '@/data/products';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import styles from './products.module.scss';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories] = useState(initialCategories);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high'>('newest');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 12;
 
-  // localStorage에서 제품 데이터 로드 및 초기화
+  // API에서 제품 데이터 로드
   useEffect(() => {
-    const loadProducts = () => {
-      if (typeof window !== 'undefined') {
-        const savedProducts = localStorage.getItem('admin-products');
-        if (savedProducts) {
-          setProducts(JSON.parse(savedProducts));
-        } else {
-          // localStorage가 비어있으면 정적 데이터로 초기화
-          localStorage.setItem('admin-products', JSON.stringify(initialProducts));
-          setProducts(initialProducts);
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/products?all=true');
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data);
         }
+      } catch (error) {
+        console.error('제품 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    const loadCategories = () => {
-      if (typeof window !== 'undefined') {
-        const savedCategories = localStorage.getItem('admin-categories');
-        if (savedCategories) {
-          setCategories(JSON.parse(savedCategories));
-        } else {
-          // localStorage가 비어있으면 정적 데이터로 초기화
-          localStorage.setItem('admin-categories', JSON.stringify(initialCategories));
-          setCategories(initialCategories);
-        }
-      }
-    };
-
-    loadProducts();
-    loadCategories();
-
-    // storage 이벤트 리스너 (다른 탭에서 변경 시 감지)
-    const handleStorage = () => {
-      loadProducts();
-      loadCategories();
-    };
-    window.addEventListener('storage', handleStorage);
-
-    // 같은 탭에서의 변경을 감지하기 위한 커스텀 이벤트
-    const handleStorageChange = () => {
-      loadProducts();
-      loadCategories();
-    };
-    window.addEventListener('localStorageUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('localStorageUpdated', handleStorageChange);
-    };
+    fetchProducts();
   }, []);
 
   // 필터링 & 정렬
@@ -156,7 +126,7 @@ export default function ProductsPage() {
             <div className={styles.sortBox}>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'newest' | 'price-low' | 'price-high')}
                 className={styles.sortSelect}
               >
                 <option value="newest">최신순</option>
@@ -175,80 +145,86 @@ export default function ProductsPage() {
 
       {/* 제품 그리드 */}
       <div className={styles.container}>
-        <div className={styles.productsGrid}>
-          {currentProducts.map((product) => (
-            <Link
-              key={product.id}
-              href={`/products/${product.id}`}
-              className={styles.productCard}
-            >
-              {/* 뱃지 */}
-              <div className={styles.badges}>
-                {product.isNew && <span className={styles.badgeNew}>NEW</span>}
-                {product.isBestSeller && <span className={styles.badgeBest}>BEST</span>}
-                {product.originalPrice && (
-                  <span className={styles.badgeSale}>
-                    {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% SALE
-                  </span>
-                )}
-              </div>
-
-              {/* 이미지 */}
-              <div className={styles.productImage}>
-                {product.thumbnail ? (
-                  <Image
-                    src={product.thumbnail}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    style={{ objectFit: 'cover' }}
-                    loading="lazy"
-                    quality={85}
-                  />
-                ) : (
-                  <div className={styles.noImage}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              {/* 정보 */}
-              <div className={styles.productInfo}>
-                <div className={styles.category}>{product.category}</div>
-                <h3 className={styles.productName}>{product.name}</h3>
-                <p className={styles.productDesc}>{product.description}</p>
-
-                {/* 태그 */}
-                {product.tags && product.tags.length > 0 && (
-                  <div className={styles.tags}>
-                    {product.tags.slice(0, 3).map((tag, idx) => (
-                      <span key={idx} className={styles.tag}>
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* 가격 */}
-                <div className={styles.priceBox}>
+        {isLoading ? (
+          <div className={styles.emptyState}>
+            <p>제품을 불러오는 중...</p>
+          </div>
+        ) : (
+          <div className={styles.productsGrid}>
+            {currentProducts.map((product) => (
+              <Link
+                key={product.id}
+                href={`/products/${product.id}`}
+                className={styles.productCard}
+              >
+                {/* 뱃지 */}
+                <div className={styles.badges}>
+                  {product.isNew && <span className={styles.badgeNew}>NEW</span>}
+                  {product.isBestSeller && <span className={styles.badgeBest}>BEST</span>}
                   {product.originalPrice && (
-                    <span className={styles.originalPrice}>
-                      {product.originalPrice.toLocaleString()}원
+                    <span className={styles.badgeSale}>
+                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% SALE
                     </span>
                   )}
-                  <span className={styles.price}>{product.price.toLocaleString()}원</span>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+
+                {/* 이미지 */}
+                <div className={styles.productImage}>
+                  {product.thumbnail ? (
+                    <Image
+                      src={product.thumbnail}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      style={{ objectFit: 'cover' }}
+                      loading="lazy"
+                      quality={85}
+                    />
+                  ) : (
+                    <div className={styles.noImage}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* 정보 */}
+                <div className={styles.productInfo}>
+                  <div className={styles.category}>{product.category}</div>
+                  <h3 className={styles.productName}>{product.name}</h3>
+                  <p className={styles.productDesc}>{product.description}</p>
+
+                  {/* 태그 */}
+                  {product.tags && product.tags.length > 0 && (
+                    <div className={styles.tags}>
+                      {product.tags.slice(0, 3).map((tag, idx) => (
+                        <span key={idx} className={styles.tag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 가격 */}
+                  <div className={styles.priceBox}>
+                    {product.originalPrice && (
+                      <span className={styles.originalPrice}>
+                        {product.originalPrice.toLocaleString()}원
+                      </span>
+                    )}
+                    <span className={styles.price}>{product.price.toLocaleString()}원</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* 빈 상태 */}
-        {filteredProducts.length === 0 && (
+        {!isLoading && filteredProducts.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📦</div>
             <h3>제품이 없습니다</h3>

@@ -1,8 +1,22 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getClientId } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    // Rate limit 확인
+    const clientId = getClientId(request);
+    const rateLimit = await checkRateLimit(clientId, 'upload');
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: `업로드 요청이 너무 많습니다. ${rateLimit.blockedMinutes}분 후에 다시 시도해주세요.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 

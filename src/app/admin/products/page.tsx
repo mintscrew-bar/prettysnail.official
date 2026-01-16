@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { products as initialProducts, Product, categories as initialCategories } from '@/data/products';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { Product, categories as initialCategories } from '@/data/products';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import Modal from '@/components/admin/Modal';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -14,12 +13,14 @@ interface Category {
 }
 
 export default function ProductsManagement() {
-  const [products, setProducts] = useLocalStorage<Product[]>('admin-products', initialProducts);
-  const [categories, setCategories] = useLocalStorage<Category[]>('admin-categories', initialCategories);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories] = useState<Category[]>(initialCategories);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const { uploadImage } = useImageUpload();
 
   // 기본 카테고리 (첫 번째 카테고리, 'all' 제외)
@@ -41,6 +42,26 @@ export default function ProductsManagement() {
 
   // 상세 이미지 URL 배열
   const [detailImages, setDetailImages] = useState<string[]>([]);
+
+  // API에서 제품 로드
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/products?all=true');
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error('제품 로드 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 필터링된 제품 목록
   const filteredProducts = products.filter((product) => {
@@ -95,43 +116,75 @@ export default function ProductsManagement() {
   };
 
   // 제품 저장
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.price || !formData.description) {
       alert('제목, 가격, 설명은 필수 항목입니다.');
       return;
     }
 
     try {
-      const productData: Partial<Product> = {
+      setIsSaving(true);
+      const productData = {
         ...formData,
         detailImages: detailImages,
       };
 
       if (editingProduct) {
         // 수정
-        setProducts(
-          products.map((p) => (p.id === editingProduct.id ? { ...productData, id: p.id } as Product : p))
-        );
+        const response = await fetch(`/api/products/${editingProduct.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData),
+        });
+
+        if (response.ok) {
+          const updatedProduct = await response.json();
+          setProducts(products.map((p) => (p.id === editingProduct.id ? updatedProduct : p)));
+          closeModal();
+        } else {
+          throw new Error('수정 실패');
+        }
       } else {
         // 추가
-        const newProduct: Product = {
-          ...productData,
-          id: Date.now().toString(),
-        } as Product;
-        setProducts([...products, newProduct]);
-      }
+        const response = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData),
+        });
 
-      closeModal();
+        if (response.ok) {
+          const newProduct = await response.json();
+          setProducts([newProduct, ...products]);
+          closeModal();
+        } else {
+          throw new Error('추가 실패');
+        }
+      }
     } catch (error) {
-      // 에러는 useLocalStorage에서 이미 처리됨
       console.error('제품 저장 실패:', error);
+      alert('제품 저장에 실패했습니다.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // 제품 삭제
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('정말 삭제하시겠습니까?')) {
-      setProducts(products.filter((p) => p.id !== id));
+      try {
+        const response = await fetch(`/api/products/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setProducts(products.filter((p) => p.id !== id));
+        } else {
+          throw new Error('삭제 실패');
+        }
+      } catch (error) {
+        console.error('제품 삭제 실패:', error);
+        alert('제품 삭제에 실패했습니다.');
+      }
     }
   };
 
@@ -156,6 +209,14 @@ export default function ProductsManagement() {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className={styles.managementPage}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.managementPage}>
       {/* 헤더 */}
@@ -165,7 +226,7 @@ export default function ProductsManagement() {
           <p className={styles.pageDesc}>제품을 추가, 수정, 삭제할 수 있어요</p>
         </div>
         <button className={styles.primaryBtn} onClick={() => openModal()}>
-          ➕ 새 제품 추가
+          + 새 제품 추가
         </button>
       </div>
 
@@ -234,9 +295,9 @@ export default function ProductsManagement() {
                 </td>
                 <td>
                   <div className={styles.storeIcons}>
-                    {product.stores?.naver && <span title="네이버">🟢</span>}
-                    {product.stores?.coupang && <span title="쿠팡">🔴</span>}
-                    {product.stores?.etc && <span title="기타">⚪</span>}
+                    {product.stores?.naver && <span title="네이버">N</span>}
+                    {product.stores?.coupang && <span title="쿠팡">C</span>}
+                    {product.stores?.etc && <span title="기타">E</span>}
                   </div>
                 </td>
                 <td>
@@ -371,7 +432,7 @@ export default function ProductsManagement() {
                             className={styles.imageRemoveBtn}
                             onClick={() => removeDetailImage(index)}
                           >
-                            ✕
+                            X
                           </button>
                         </div>
                       ))}
@@ -384,7 +445,7 @@ export default function ProductsManagement() {
                     value=""
                     onChange={(url) => setDetailImages([...detailImages, url])}
                     onUpload={uploadImage}
-                    placeholder="상세 페이지 이미지를 추가하세요 (고품질 압축 적용)"
+                    placeholder="상세 페이지 이미지를 추가하세요 (원본 화질 유지)"
                     highQuality={true}
                   />
                 </div>
@@ -515,8 +576,8 @@ export default function ProductsManagement() {
             <button type="button" className={styles.cancelBtn} onClick={closeModal}>
               취소
             </button>
-            <button type="submit" className={styles.saveBtn}>
-              {editingProduct ? '수정' : '추가'}
+            <button type="submit" className={styles.saveBtn} disabled={isSaving}>
+              {isSaving ? '저장 중...' : editingProduct ? '수정' : '추가'}
             </button>
           </div>
         </form>

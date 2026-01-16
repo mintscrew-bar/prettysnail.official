@@ -1,29 +1,48 @@
 'use client';
 
-import React, { useState } from 'react';
-import { promotions as initialPromotions, PromotionCard } from '@/data/promotions';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { PromotionCard } from '@/data/promotions';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import Modal from '@/components/admin/Modal';
 import ImageUpload from '@/components/admin/ImageUpload';
 import styles from '../admin.module.scss';
 
 export default function PromotionsManagement() {
-  const [promotions, setPromotions] = useLocalStorage<PromotionCard[]>(
-    'admin-promotions',
-    initialPromotions
-  );
+  const [promotions, setPromotions] = useState<PromotionCard[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<PromotionCard | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const { uploadImage } = useImageUpload();
 
   const [formData, setFormData] = useState<Partial<PromotionCard>>({
+    type: 'event',
     title: '',
     description: '',
     image: '',
     link: '#',
   });
+
+  // API에서 프로모션 로드
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
+
+  const fetchPromotions = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/promotions?all=true');
+      if (response.ok) {
+        const data = await response.json();
+        setPromotions(data);
+      }
+    } catch (error) {
+      console.error('프로모션 로드 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 필터링된 프로모션 목록
   const filteredPromotions = promotions.filter((promo) =>
@@ -38,6 +57,7 @@ export default function PromotionsManagement() {
     } else {
       setEditingPromotion(null);
       setFormData({
+        type: 'event',
         title: '',
         description: '',
         image: '',
@@ -52,6 +72,7 @@ export default function PromotionsManagement() {
     setIsModalOpen(false);
     setEditingPromotion(null);
     setFormData({
+      type: 'event',
       title: '',
       description: '',
       image: '',
@@ -60,51 +81,81 @@ export default function PromotionsManagement() {
   };
 
   // 프로모션 저장
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title || !formData.description) {
       alert('필수 항목을 모두 입력해주세요.');
       return;
     }
 
-    if (editingPromotion) {
-      // 수정
-      setPromotions(
-        promotions.map((p) =>
-          p.id === editingPromotion.id ? { ...formData, id: p.id } as PromotionCard : p
-        )
-      );
-    } else {
-      // 추가
-      const newPromotion: PromotionCard = {
-        ...formData,
-        id: `promo-${Date.now()}`,
-      } as PromotionCard;
-      setPromotions([...promotions, newPromotion]);
-    }
+    try {
+      setIsSaving(true);
 
-    closeModal();
+      if (editingPromotion) {
+        // 수정
+        const response = await fetch(`/api/promotions/${editingPromotion.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          const updatedPromotion = await response.json();
+          setPromotions(promotions.map((p) => (p.id === editingPromotion.id ? updatedPromotion : p)));
+          closeModal();
+        } else {
+          throw new Error('수정 실패');
+        }
+      } else {
+        // 추가
+        const response = await fetch('/api/promotions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          const newPromotion = await response.json();
+          setPromotions([newPromotion, ...promotions]);
+          closeModal();
+        } else {
+          throw new Error('추가 실패');
+        }
+      }
+    } catch (error) {
+      console.error('프로모션 저장 실패:', error);
+      alert('프로모션 저장에 실패했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // 프로모션 삭제
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('정말 삭제하시겠습니까?')) {
-      setPromotions(promotions.filter((p) => p.id !== id));
+      try {
+        const response = await fetch(`/api/promotions/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setPromotions(promotions.filter((p) => p.id !== id));
+        } else {
+          throw new Error('삭제 실패');
+        }
+      } catch (error) {
+        console.error('프로모션 삭제 실패:', error);
+        alert('프로모션 삭제에 실패했습니다.');
+      }
     }
   };
 
-  // 순서 변경
-  const movePromotion = (index: number, direction: 'up' | 'down') => {
-    const newPromotions = [...promotions];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (targetIndex < 0 || targetIndex >= newPromotions.length) return;
-
-    [newPromotions[index], newPromotions[targetIndex]] = [
-      newPromotions[targetIndex],
-      newPromotions[index],
-    ];
-    setPromotions(newPromotions);
-  };
+  if (isLoading) {
+    return (
+      <div className={styles.managementPage}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.managementPage}>
@@ -115,7 +166,7 @@ export default function PromotionsManagement() {
           <p className={styles.pageDesc}>이벤트와 프로모션을 관리할 수 있어요</p>
         </div>
         <button className={styles.primaryBtn} onClick={() => openModal()}>
-          ➕ 새 프로모션 추가
+          + 새 프로모션 추가
         </button>
       </div>
 
@@ -134,7 +185,7 @@ export default function PromotionsManagement() {
 
       {/* 프로모션 그리드 */}
       <div className={styles.promoGrid}>
-        {filteredPromotions.map((promotion, index) => (
+        {filteredPromotions.map((promotion) => (
           <div key={promotion.id} className={styles.promoCard}>
             <div className={styles.promoImage}>
               {promotion.image ? (
@@ -155,25 +206,6 @@ export default function PromotionsManagement() {
             </div>
 
             <div className={styles.promoActions}>
-              <div className={styles.orderBtns}>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => movePromotion(index, 'up')}
-                  disabled={index === 0}
-                  title="위로 이동"
-                >
-                  ▲
-                </button>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => movePromotion(index, 'down')}
-                  disabled={index === filteredPromotions.length - 1}
-                  title="아래로 이동"
-                >
-                  ▼
-                </button>
-              </div>
-
               <div className={styles.actionBtns}>
                 <button className={styles.editBtn} onClick={() => openModal(promotion)}>
                   수정
@@ -254,8 +286,8 @@ export default function PromotionsManagement() {
             <button type="button" className={styles.cancelBtn} onClick={closeModal}>
               취소
             </button>
-            <button type="submit" className={styles.saveBtn}>
-              {editingPromotion ? '수정' : '추가'}
+            <button type="submit" className={styles.saveBtn} disabled={isSaving}>
+              {isSaving ? '저장 중...' : editingPromotion ? '수정' : '추가'}
             </button>
           </div>
         </form>

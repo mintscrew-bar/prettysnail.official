@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key');
+// JWT_SECRET 환경변수 검증
+const JWT_SECRET_ENV = process.env.JWT_SECRET;
+
+if (!JWT_SECRET_ENV) {
+  throw new Error(
+    'JWT_SECRET environment variable is required. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"'
+  );
+}
+
+if (JWT_SECRET_ENV.length < 32) {
+  throw new Error(
+    'JWT_SECRET must be at least 32 characters long for security'
+  );
+}
+
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_ENV);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

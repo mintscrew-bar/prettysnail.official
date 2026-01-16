@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Product, products as initialProducts } from '@/data/products';
+import { Product } from '@/data/products';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import styles from '../products.module.scss';
@@ -13,51 +13,42 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadProduct = () => {
-      if (typeof window !== 'undefined') {
-        const savedProducts = localStorage.getItem('admin-products');
-        let allProducts: Product[] = [];
+    const loadProduct = async () => {
+      try {
+        setIsLoading(true);
 
-        if (savedProducts) {
-          allProducts = JSON.parse(savedProducts);
-        } else {
-          // localStorage가 비어있으면 정적 데이터로 초기화
-          localStorage.setItem('admin-products', JSON.stringify(initialProducts));
-          allProducts = initialProducts;
-        }
-
-        const currentProduct = allProducts.find((p) => p.id === params.id);
-
-        if (currentProduct) {
+        // 제품 상세 정보 로드
+        const response = await fetch(`/api/products/${params.id}`);
+        if (response.ok) {
+          const currentProduct = await response.json();
           setProduct(currentProduct);
 
-          // 같은 카테고리의 다른 제품 추천
-          const related = allProducts
-            .filter((p) => p.category === currentProduct.category && p.id !== currentProduct.id)
-            .slice(0, 3);
-          setRelatedProducts(related);
+          // 관련 제품 로드
+          const allResponse = await fetch('/api/products?all=true');
+          if (allResponse.ok) {
+            const allProducts = await allResponse.json();
+            const related = allProducts
+              .filter((p: Product) => p.category === currentProduct.category && p.id !== currentProduct.id)
+              .slice(0, 3);
+            setRelatedProducts(related);
+          }
         }
+      } catch (error) {
+        console.error('제품 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    loadProduct();
-
-    // storage 이벤트 리스너 (다른 탭에서 변경 시 감지)
-    window.addEventListener('storage', loadProduct);
-
-    // 같은 탭에서의 변경을 감지하기 위한 커스텀 이벤트
-    const handleStorageChange = () => loadProduct();
-    window.addEventListener('localStorageUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', loadProduct);
-      window.removeEventListener('localStorageUpdated', handleStorageChange);
-    };
+    if (params.id) {
+      loadProduct();
+    }
   }, [params.id]);
 
-  if (!product) {
+  if (isLoading || !product) {
     return (
       <div className={styles.loading}>
         <div className={styles.loadingSpinner}></div>
