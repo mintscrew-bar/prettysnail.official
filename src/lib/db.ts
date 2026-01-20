@@ -304,28 +304,146 @@ export async function getProducts(
   // 기본 필터: 활성 상품만
   const isActive = filter?.isActive !== false;
 
-  // 총 개수 조회
-  const countResult = await sql`
-    SELECT COUNT(*) as total FROM products
-    WHERE is_active = ${isActive}
-      ${filter?.category && filter.category !== 'all' ? sql`AND category = ${filter.category}` : sql``}
-      ${filter?.isNew !== undefined ? sql`AND is_new = ${filter.isNew}` : sql``}
-      ${filter?.isBestSeller !== undefined ? sql`AND is_best_seller = ${filter.isBestSeller}` : sql``}
-      ${filter?.search ? sql`AND name ILIKE ${`%${filter.search}%`}` : sql``}
-  `;
-  const total = parseInt(countResult.rows[0].total);
+  // 필터 조건 확인
+  const hasCategory = filter?.category && filter.category !== 'all';
+  const hasIsNew = filter?.isNew !== undefined;
+  const hasIsBestSeller = filter?.isBestSeller !== undefined;
+  const hasSearch = !!filter?.search;
 
-  // 데이터 조회 (페이지네이션 적용)
-  const result = await sql<ProductDB>`
-    SELECT * FROM products
-    WHERE is_active = ${isActive}
-      ${filter?.category && filter.category !== 'all' ? sql`AND category = ${filter.category}` : sql``}
-      ${filter?.isNew !== undefined ? sql`AND is_new = ${filter.isNew}` : sql``}
-      ${filter?.isBestSeller !== undefined ? sql`AND is_best_seller = ${filter.isBestSeller}` : sql``}
-      ${filter?.search ? sql`AND name ILIKE ${`%${filter.search}%`}` : sql``}
-    ORDER BY created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
+  // 필터 조합에 따른 쿼리 실행
+  let countResult;
+  let result;
+
+  if (hasCategory && hasIsNew && hasIsBestSeller && hasSearch) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND is_new = ${filter!.isNew}
+        AND is_best_seller = ${filter!.isBestSeller}
+        AND name ILIKE ${`%${filter!.search}%`}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND is_new = ${filter!.isNew}
+        AND is_best_seller = ${filter!.isBestSeller}
+        AND name ILIKE ${`%${filter!.search}%`}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCategory && hasSearch) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND name ILIKE ${`%${filter!.search}%`}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND name ILIKE ${`%${filter!.search}%`}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCategory && hasIsNew) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND is_new = ${filter!.isNew}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND is_new = ${filter!.isNew}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCategory && hasIsBestSeller) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND is_best_seller = ${filter!.isBestSeller}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+        AND is_best_seller = ${filter!.isBestSeller}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCategory) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND category = ${filter!.category}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasIsNew) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND is_new = ${filter!.isNew}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND is_new = ${filter!.isNew}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasIsBestSeller) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND is_best_seller = ${filter!.isBestSeller}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND is_best_seller = ${filter!.isBestSeller}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasSearch) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+        AND name ILIKE ${`%${filter!.search}%`}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+        AND name ILIKE ${`%${filter!.search}%`}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM products
+      WHERE is_active = ${isActive}
+    `;
+    result = await sql<ProductDB>`
+      SELECT * FROM products
+      WHERE is_active = ${isActive}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  }
+
+  const total = parseInt(countResult.rows[0].total);
 
   return {
     data: result.rows.map(row => ({
@@ -526,28 +644,112 @@ export async function getNotices(
   const limit = pagination?.limit || 20;
   const offset = (page - 1) * limit;
 
-  // 총 개수 조회
-  const countResult = await sql`
-    SELECT COUNT(*) as total FROM notices
-    WHERE 1=1
-      ${filter?.category && filter.category !== '전체' ? sql`AND category = ${filter.category}` : sql``}
-      ${filter?.isPinned !== undefined ? sql`AND is_pinned = ${filter.isPinned}` : sql``}
-      ${filter?.isImportant !== undefined ? sql`AND is_important = ${filter.isImportant}` : sql``}
-      ${filter?.search ? sql`AND (title ILIKE ${`%${filter.search}%`} OR content ILIKE ${`%${filter.search}%`})` : sql``}
-  `;
-  const total = parseInt(countResult.rows[0].total);
+  // 필터 조건 확인
+  const hasCategory = filter?.category && filter.category !== '전체';
+  const hasIsPinned = filter?.isPinned !== undefined;
+  const hasIsImportant = filter?.isImportant !== undefined;
+  const hasSearch = !!filter?.search;
 
-  // 데이터 조회 (고정 공지 우선, 날짜 내림차순)
-  const result = await sql<NoticeDB>`
-    SELECT * FROM notices
-    WHERE 1=1
-      ${filter?.category && filter.category !== '전체' ? sql`AND category = ${filter.category}` : sql``}
-      ${filter?.isPinned !== undefined ? sql`AND is_pinned = ${filter.isPinned}` : sql``}
-      ${filter?.isImportant !== undefined ? sql`AND is_important = ${filter.isImportant}` : sql``}
-      ${filter?.search ? sql`AND (title ILIKE ${`%${filter.search}%`} OR content ILIKE ${`%${filter.search}%`})` : sql``}
-    ORDER BY is_pinned DESC, date DESC, created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
+  let countResult;
+  let result;
+
+  if (hasCategory && hasSearch) {
+    const searchPattern = `%${filter!.search}%`;
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+      WHERE category = ${filter!.category}
+        AND (title ILIKE ${searchPattern} OR content ILIKE ${searchPattern})
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      WHERE category = ${filter!.category}
+        AND (title ILIKE ${searchPattern} OR content ILIKE ${searchPattern})
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCategory && hasIsPinned) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+      WHERE category = ${filter!.category}
+        AND is_pinned = ${filter!.isPinned}
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      WHERE category = ${filter!.category}
+        AND is_pinned = ${filter!.isPinned}
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCategory && hasIsImportant) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+      WHERE category = ${filter!.category}
+        AND is_important = ${filter!.isImportant}
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      WHERE category = ${filter!.category}
+        AND is_important = ${filter!.isImportant}
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCategory) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+      WHERE category = ${filter!.category}
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      WHERE category = ${filter!.category}
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasIsPinned) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+      WHERE is_pinned = ${filter!.isPinned}
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      WHERE is_pinned = ${filter!.isPinned}
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasIsImportant) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+      WHERE is_important = ${filter!.isImportant}
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      WHERE is_important = ${filter!.isImportant}
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasSearch) {
+    const searchPattern = `%${filter!.search}%`;
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+      WHERE title ILIKE ${searchPattern} OR content ILIKE ${searchPattern}
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      WHERE title ILIKE ${searchPattern} OR content ILIKE ${searchPattern}
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM notices
+    `;
+    result = await sql<NoticeDB>`
+      SELECT * FROM notices
+      ORDER BY is_pinned DESC, date DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  }
+
+  const total = parseInt(countResult.rows[0].total);
 
   return {
     data: result.rows,
@@ -698,28 +900,139 @@ export async function getPromotions(
 
   // 기본 필터: 활성 프로모션만
   const isActive = filter?.isActive !== false;
-  const today = filter?.currentOnly ? new Date() : null;
+  const today = new Date().toISOString();
 
-  // 총 개수 조회
-  const countResult = await sql`
-    SELECT COUNT(*) as total FROM promotions
-    WHERE is_active = ${isActive}
-      ${filter?.type ? sql`AND type = ${filter.type}` : sql``}
-      ${filter?.isNew !== undefined ? sql`AND is_new = ${filter.isNew}` : sql``}
-      ${filter?.currentOnly ? sql`AND (start_date IS NULL OR start_date <= ${today}) AND (end_date IS NULL OR end_date >= ${today})` : sql``}
-  `;
+  // 필터 조건 확인
+  const hasType = !!filter?.type;
+  const hasIsNew = filter?.isNew !== undefined;
+  const hasCurrentOnly = !!filter?.currentOnly;
+
+  let countResult;
+  let result;
+
+  if (hasType && hasIsNew && hasCurrentOnly) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+        AND is_new = ${filter!.isNew}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+        AND is_new = ${filter!.isNew}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasType && hasCurrentOnly) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasIsNew && hasCurrentOnly) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+        AND is_new = ${filter!.isNew}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+        AND is_new = ${filter!.isNew}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasType && hasIsNew) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+        AND is_new = ${filter!.isNew}
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+        AND is_new = ${filter!.isNew}
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasType) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+        AND type = ${filter!.type}
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasIsNew) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+        AND is_new = ${filter!.isNew}
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+        AND is_new = ${filter!.isNew}
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else if (hasCurrentOnly) {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+        AND (start_date IS NULL OR start_date <= ${today})
+        AND (end_date IS NULL OR end_date >= ${today})
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  } else {
+    countResult = await sql`
+      SELECT COUNT(*) as total FROM promotions
+      WHERE is_active = ${isActive}
+    `;
+    result = await sql<PromotionDB>`
+      SELECT * FROM promotions
+      WHERE is_active = ${isActive}
+      ORDER BY sort_order ASC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  }
+
   const total = parseInt(countResult.rows[0].total);
-
-  // 데이터 조회
-  const result = await sql<PromotionDB>`
-    SELECT * FROM promotions
-    WHERE is_active = ${isActive}
-      ${filter?.type ? sql`AND type = ${filter.type}` : sql``}
-      ${filter?.isNew !== undefined ? sql`AND is_new = ${filter.isNew}` : sql``}
-      ${filter?.currentOnly ? sql`AND (start_date IS NULL OR start_date <= ${today}) AND (end_date IS NULL OR end_date >= ${today})` : sql``}
-    ORDER BY sort_order ASC, created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
 
   return {
     data: result.rows,
