@@ -4,17 +4,22 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    // Rate limit 확인
-    const clientId = getClientId(request);
-    const rateLimit = await checkRateLimit(clientId, "upload");
+    // Rate limit 확인 (선택적 - 실패해도 계속 진행)
+    try {
+      const clientId = getClientId(request);
+      const rateLimit = await checkRateLimit(clientId, "upload");
 
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        {
-          error: `업로드 요청이 너무 많습니다. ${rateLimit.blockedMinutes}분 후에 다시 시도해주세요.`,
-        },
-        { status: 429 }
-      );
+      if (!rateLimit.allowed) {
+        return NextResponse.json(
+          {
+            error: `업로드 요청이 너무 많습니다. ${rateLimit.blockedMinutes}분 후에 다시 시도해주세요.`,
+          },
+          { status: 429 }
+        );
+      }
+    } catch (rateLimitError) {
+      console.warn("Rate limit check failed, continuing without rate limiting:", rateLimitError);
+      // Rate limit 실패해도 업로드는 계속 진행
     }
 
     const formData = await request.formData();
