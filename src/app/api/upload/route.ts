@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const blob = await put(file.name, file, {
         access: "public",
+        addRandomSuffix: true, // 파일명 중복 방지를 위한 랜덤 접미사 추가
       });
 
       return NextResponse.json({ url: blob.url });
