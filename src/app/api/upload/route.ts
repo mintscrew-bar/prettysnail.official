@@ -80,8 +80,20 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error("Upload error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    console.error("Upload error details:", {
+      message: errorMessage,
+      stack: errorStack,
+      error,
+    });
+
     return NextResponse.json(
-      { error: "업로드 중 오류가 발생했습니다." },
+      {
+        error: "업로드 중 오류가 발생했습니다.",
+        details: errorMessage,
+      },
       { status: 500 }
     );
   }
