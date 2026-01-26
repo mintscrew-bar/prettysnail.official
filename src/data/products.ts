@@ -10,7 +10,8 @@ export interface Product {
   category: '우렁이' | '채소' | '밀키트' | '기타';
   price: number;
   originalPrice?: number;
-  thumbnail?: string; // 썸네일 이미지 (목록용)
+  thumbnail?: string; // 메인 썸네일 (하위 호환성)
+  thumbnails?: string[]; // 여러 썸네일 이미지들 (갤러리용)
   detailImages?: string[]; // 상세 이미지들 (상세페이지용)
   description: string;
   tags?: string[];

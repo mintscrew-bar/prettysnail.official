@@ -8,12 +8,22 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import styles from '../products.module.scss';
 
+// Swiper
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Thumbs, FreeMode } from 'swiper/modules';
+import type { Swiper as SwiperType } from 'swiper';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/thumbs';
+import 'swiper/css/free-mode';
+
 export default function ProductDetailPage() {
   const params = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -104,14 +114,58 @@ export default function ProductDetailPage() {
       <div className={styles.detailSection}>
         <div className={styles.container}>
           <div className={styles.detailGrid}>
-            {/* 썸네일 이미지 */}
+            {/* 썸네일 갤러리 */}
             <div className={styles.detailImage}>
-              {product.thumbnail ? (
-                <img
-                  src={product.thumbnail}
-                  alt={product.name}
-                />
+              {/* 이미지가 있는 경우 */}
+              {((product.thumbnails && product.thumbnails.length > 0) || product.thumbnail) ? (
+                <div className={styles.swiperContainer}>
+                  {/* 메인 스와이퍼 */}
+                  <Swiper
+                    modules={[Navigation, Thumbs]}
+                    navigation
+                    thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
+                    className={styles.mainSwiper}
+                    spaceBetween={10}
+                    slidesPerView={1}
+                  >
+                    {(product.thumbnails && product.thumbnails.length > 0 ? product.thumbnails : [product.thumbnail!]).map((imageUrl, index) => (
+                      <SwiperSlide key={index}>
+                        <div className={styles.slideImageWrapper}>
+                          <img
+                            src={imageUrl}
+                            alt={`${product.name} ${index + 1}`}
+                          />
+                        </div>
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+
+                  {/* 썸네일 네비게이션 (이미지가 2개 이상일 때만 표시) */}
+                  {product.thumbnails && product.thumbnails.length > 1 && (
+                    <Swiper
+                      modules={[FreeMode, Thumbs]}
+                      onSwiper={setThumbsSwiper}
+                      freeMode
+                      watchSlidesProgress
+                      slidesPerView="auto"
+                      spaceBetween={10}
+                      className={styles.thumbSwiper}
+                    >
+                      {product.thumbnails.map((imageUrl, index) => (
+                        <SwiperSlide key={index} className={styles.thumbSlide}>
+                          <div className={styles.thumbImageWrapper}>
+                            <img
+                              src={imageUrl}
+                              alt={`${product.name} 썸네일 ${index + 1}`}
+                            />
+                          </div>
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+                  )}
+                </div>
               ) : (
+                /* 이미지가 없는 경우 */
                 <div className={styles.noImage}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />

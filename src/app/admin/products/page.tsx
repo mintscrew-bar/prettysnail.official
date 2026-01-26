@@ -36,6 +36,7 @@ export default function ProductsManagement() {
     description: '',
     tags: [],
     thumbnail: '',
+    thumbnails: [],
     detailImages: [],
     stores: {},
   });
@@ -85,6 +86,7 @@ export default function ProductsManagement() {
         description: '',
         tags: [],
         thumbnail: '',
+        thumbnails: [],
         detailImages: [],
         stores: {},
       });
@@ -417,6 +419,47 @@ export default function ProductsManagement() {
                   onUpload={uploadImage}
                   placeholder="제품 썸네일 이미지를 업로드하세요"
                 />
+
+                {/* 여러 썸네일 (갤러리용) */}
+                <div className={styles.formGroup} style={{ marginTop: '1.5rem' }}>
+                  <label>썸네일 갤러리 (여러 장)</label>
+
+                  {/* 업로드된 썸네일들 */}
+                  {(formData.thumbnails || []).length > 0 && (
+                    <div className={styles.detailImagesPreview}>
+                      {(formData.thumbnails || []).map((url, index) => (
+                        <div key={index} className={styles.detailImageItem}>
+                          <img src={url} alt={`썸네일 ${index + 1}`} />
+                          <button
+                            type="button"
+                            className={styles.imageRemoveBtn}
+                            onClick={() => {
+                              const newThumbnails = [...(formData.thumbnails || [])];
+                              newThumbnails.splice(index, 1);
+                              setFormData({ ...formData, thumbnails: newThumbnails });
+                            }}
+                          >
+                            X
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 새 썸네일 추가 */}
+                  <ImageUpload
+                    label=""
+                    value=""
+                    onChange={(url) => {
+                      setFormData({
+                        ...formData,
+                        thumbnails: [...(formData.thumbnails || []), url],
+                      });
+                    }}
+                    onUpload={uploadImage}
+                    placeholder="썸네일 추가"
+                  />
+                </div>
 
                 <div className={styles.formGroup} style={{ marginTop: '1.5rem' }}>
                   <label>상세 페이지 이미지</label>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { upload } from '@vercel/blob/client';
 
 interface UseImageUploadReturn {
   uploadImage: (file: File) => Promise<string>;
@@ -15,6 +16,24 @@ export function useImageUpload(): UseImageUploadReturn {
     setError(null);
 
     try {
+      const LARGE_FILE_THRESHOLD = 4 * 1024 * 1024; // 4MB
+
+      // Large file: Use client-side direct upload
+      if (file.size >= LARGE_FILE_THRESHOLD) {
+        console.log(
+          '클라이언트 직접 업로드 사용 (대용량 파일):',
+          (file.size / 1024 / 1024).toFixed(2) + 'MB'
+        );
+
+        const blob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload/client',
+        });
+
+        return blob.url;
+      }
+
+      // Small file: Use existing server upload
       const formData = new FormData();
       formData.append('file', file);
 
@@ -37,9 +56,26 @@ export function useImageUpload(): UseImageUploadReturn {
 
       return data.url;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '업로드 중 오류가 발생했습니다.';
+      // Enhanced error messages
+      let errorMessage = '업로드 중 오류가 발생했습니다.';
+
+      if (err instanceof Error) {
+        // Handle specific error types
+        if (err.message.includes('token') || err.message.includes('토큰')) {
+          errorMessage = '업로드 권한이 만료되었습니다. 다시 시도해주세요.';
+        } else if (err.message.includes('size') || err.message.includes('크기')) {
+          errorMessage = '파일 크기가 너무 큽니다 (최대 10MB).';
+        } else if (err.message.includes('type') || err.message.includes('형식')) {
+          errorMessage = '이미지 파일만 업로드 가능합니다.';
+        } else if (err.message.includes('개발 모드')) {
+          errorMessage = err.message;
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
       setError(errorMessage);
-      throw err;
+      throw new Error(errorMessage);
     } finally {
       setUploading(false);
     }

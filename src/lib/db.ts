@@ -66,6 +66,7 @@ export async function initializeDatabase() {
         price DECIMAL(10, 0) NOT NULL CHECK (price >= 0),
         original_price DECIMAL(10, 0) CHECK (original_price IS NULL OR original_price >= 0),
         thumbnail TEXT,
+        thumbnails TEXT[] DEFAULT '{}',
         detail_images TEXT[] DEFAULT '{}',
         description TEXT NOT NULL DEFAULT '',
         tags TEXT[] DEFAULT '{}',
@@ -89,6 +90,15 @@ export async function initializeDatabase() {
         CONSTRAINT chk_discount_price
           CHECK (original_price IS NULL OR price <= original_price)
       )
+    `;
+
+    // thumbnails 컬럼 추가 (기존 테이블에 없는 경우)
+    await sql`
+      DO $$ BEGIN
+        ALTER TABLE products ADD COLUMN IF NOT EXISTS thumbnails TEXT[] DEFAULT '{}';
+      EXCEPTION
+        WHEN duplicate_column THEN null;
+      END $$
     `;
 
     // 제품 인덱스
@@ -272,6 +282,7 @@ export interface ProductDB {
   price: number;
   original_price: number | null;
   thumbnail: string | null;
+  thumbnails: string[];
   detail_images: string[];
   description: string;
   tags: string[];
@@ -505,9 +516,13 @@ export async function createProduct(
     ? `{${product.tags.map(s => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`
     : '{}';
 
+  const thumbnailsArray = product.thumbnails && product.thumbnails.length > 0
+    ? `{${product.thumbnails.map(s => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`
+    : '{}';
+
   const result = await sql<ProductDB>`
     INSERT INTO products (
-      name, category, price, original_price, thumbnail, detail_images,
+      name, category, price, original_price, thumbnail, thumbnails, detail_images,
       description, tags, is_new, is_best_seller, store_naver, store_coupang, store_etc
     ) VALUES (
       ${product.name},
@@ -515,6 +530,7 @@ export async function createProduct(
       ${product.price},
       ${product.original_price},
       ${product.thumbnail},
+      ${thumbnailsArray}::text[],
       ${detailImagesArray}::text[],
       ${product.description || ''},
       ${tagsArray}::text[],
@@ -530,6 +546,7 @@ export async function createProduct(
   const row = result.rows[0];
   return {
     ...row,
+    thumbnails: row.thumbnails || [],
     detail_images: row.detail_images || [],
     tags: row.tags || [],
   };
@@ -550,6 +567,11 @@ export async function updateProduct(
   }
 
   // 배열을 PostgreSQL 형식으로 변환
+  const thumbnailsArray = product.thumbnails !== undefined
+    ? (product.thumbnails && product.thumbnails.length > 0
+        ? `{${product.thumbnails.map(s => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`
+        : '{}')
+    : null;
   const detailImagesArray = product.detail_images !== undefined
     ? (product.detail_images && product.detail_images.length > 0
         ? `{${product.detail_images.map(s => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`
@@ -568,6 +590,7 @@ export async function updateProduct(
       price = COALESCE(${product.price ?? null}, price),
       original_price = ${product.original_price ?? null},
       thumbnail = ${product.thumbnail ?? null},
+      thumbnails = COALESCE(${thumbnailsArray}::text[], thumbnails),
       detail_images = COALESCE(${detailImagesArray}::text[], detail_images),
       description = COALESCE(${product.description ?? null}, description),
       tags = COALESCE(${tagsArray}::text[], tags),
@@ -588,6 +611,7 @@ export async function updateProduct(
   const row = result.rows[0];
   return {
     ...row,
+    thumbnails: row.thumbnails || [],
     detail_images: row.detail_images || [],
     tags: row.tags || [],
   };
