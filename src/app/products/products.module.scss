@@ -835,7 +835,7 @@
 .detailInfo {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
   max-width: 650px;
   background: white;
   padding: 2.5rem;
@@ -848,7 +848,6 @@
   // 대형 모니터
   @media (min-width: 1600px) {
     padding: 3rem;
-    gap: 2.5rem;
   }
 
   // 태블릿 이하 - sticky 해제
@@ -919,17 +918,13 @@
 
 .priceSection {
   background: #fafbfc;
-  padding: 1.5rem;
   border-radius: 8px;
   margin: 0;
   border: 1px solid #e9ecef;
 
-  @media (min-width: 1600px) {
-    padding: 1.75rem;
-  }
+
 
   @media (max-width: 767px) {
-    padding: 1.25rem;
     border-radius: 6px;
   }
 }

@@ -56,7 +56,8 @@ export default function Footer() {
           <div className={styles.footerInfo}>
             <p>상호명: 영어조합법인 이쁜우렁이 | 대표: 김선하</p>
             <p>주소: 부산 강서구 입소정관길 134-78</p>
-            <p>사업자등록번호: - | 통신판매업신고: -</p>
+            <p>이메일: summer4001@naver.com</p>
+            <p>사업자등록번호: 189-86-02061 | 통신판매업신고: -</p>
           </div>
           <p className={styles.footerCopyright}>
             © 2026 이쁜우렁이. All rights reserved.
