@@ -258,15 +258,15 @@ export default function ProductDetailPage() {
               {/* 추가 정보 */}
               <div className={styles.additionalInfo}>
                 <div className={styles.infoItem}>
-                  <span className={styles.infoIcon}>🚚</span>
+                  <span className={styles.infoBullet}>•</span>
                   <span>전국 배송 가능</span>
                 </div>
                 <div className={styles.infoItem}>
-                  <span className={styles.infoIcon}>❄️</span>
+                  <span className={styles.infoBullet}>•</span>
                   <span>신선 냉동 배송</span>
                 </div>
                 <div className={styles.infoItem}>
-                  <span className={styles.infoIcon}>✅</span>
+                  <span className={styles.infoBullet}>•</span>
                   <span>HACCP 인증</span>
                 </div>
               </div>
